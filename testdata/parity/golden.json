@@ -125,10 +125,10 @@
       "IsBot": true,
       "Name": "Googlebot",
       "Category": "Search bot",
-      "URL": "https://www.google.com/bot.html",
+      "URL": "https://developers.google.com/search/docs/crawling-indexing/overview-google-crawlers",
       "Producer": {
         "Name": "Google Inc.",
-        "URL": "https://www.google.com"
+        "URL": "https://www.google.com/"
       }
     },
     "Client": {
