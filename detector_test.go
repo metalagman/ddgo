@@ -1,6 +1,9 @@
 package ddgo
 
-import "testing"
+import (
+	"sync"
+	"testing"
+)
 
 func TestNewReturnsDetector(t *testing.T) {
 	t.Parallel()
@@ -69,6 +72,20 @@ func TestWithMaxUserAgentLenIgnoresInvalidValue(t *testing.T) {
 	result := New(WithMaxUserAgentLen(0)).Parse("Mozilla/5.0")
 	if result.UserAgent != "Mozilla/5.0" {
 		t.Fatalf("expected uncapped user agent, got %q", result.UserAgent)
+	}
+}
+
+func TestWithResultCacheSizeZeroDisablesCache(t *testing.T) {
+	t.Parallel()
+
+	detector := New(WithResultCacheSize(0))
+	if detector.cache != nil {
+		t.Fatal("expected cache to be disabled")
+	}
+
+	result := detector.Parse("Mozilla/5.0")
+	if result.UserAgent != "Mozilla/5.0" {
+		t.Fatalf("unexpected parse result %+v", result)
 	}
 }
 
@@ -282,6 +299,58 @@ func TestParseNormalizesWhitespace(t *testing.T) {
 	}
 	if result.Client.Name != "Firefox" {
 		t.Fatalf("unexpected client name %q", result.Client.Name)
+	}
+}
+
+func TestParseConcurrentAccess(t *testing.T) {
+	t.Parallel()
+
+	detector := New(WithResultCacheSize(32))
+	userAgents := []string{
+		"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
+		"Mozilla/5.0 (Linux; Android 14; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
+		"Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/122.0.6261.69 Mobile/15E148 Safari/604.1",
+	}
+
+	headers := map[string]string{
+		"Sec-CH-UA":                  "\"Not(A:Brand\";v=\"99\", \"Microsoft Edge\";v=\"123.0.0.0\", \"Chromium\";v=\"123.0.0.0\"",
+		"Sec-CH-UA-Platform":         "\"Windows\"",
+		"Sec-CH-UA-Platform-Version": "\"15.0.0\"",
+		"Sec-CH-UA-Mobile":           "?0",
+	}
+
+	const workers = 64
+	const iterations = 200
+
+	var wg sync.WaitGroup
+	errors := make(chan string, workers*iterations)
+	for worker := 0; worker < workers; worker++ {
+		worker := worker
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < iterations; i++ {
+				ua := userAgents[(worker+i)%len(userAgents)]
+				result := detector.Parse(ua)
+				if result.UserAgent == "" {
+					errors <- "Parse returned empty user agent"
+					return
+				}
+
+				headerResult := detector.ParseWithHeaders("Mozilla/5.0", headers)
+				if headerResult.Client.Name != "Microsoft Edge" {
+					errors <- "ParseWithHeaders returned unexpected client"
+					return
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errors)
+	for err := range errors {
+		t.Fatal(err)
 	}
 }
 

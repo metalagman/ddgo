@@ -4,7 +4,8 @@ import "strings"
 
 // Detector is the entry point for user-agent parsing.
 type Detector struct {
-	opts options
+	opts  options
+	cache *resultCache
 }
 
 // New creates a detector with optional configuration overrides.
@@ -17,26 +18,27 @@ func New(opts ...Option) *Detector {
 		opt(&cfg)
 	}
 	return &Detector{
-		opts: cfg,
+		opts:  cfg,
+		cache: newResultCache(cfg.resultCacheSize),
 	}
 }
 
 // Parse analyzes a user-agent string and returns a detection result.
 func (d *Detector) Parse(userAgent string) Result {
-	return d.parse(userAgent, ClientHints{})
+	return d.parse(userAgent, ClientHints{}, true)
 }
 
 // ParseWithClientHints analyzes a user-agent string with optional client hints.
 func (d *Detector) ParseWithClientHints(userAgent string, hints ClientHints) Result {
-	return d.parse(userAgent, hints)
+	return d.parse(userAgent, hints, false)
 }
 
 // ParseWithHeaders analyzes a user-agent string and Sec-CH-UA style headers.
 func (d *Detector) ParseWithHeaders(userAgent string, headers map[string]string) Result {
-	return d.parse(userAgent, ParseClientHintsFromHeaders(headers))
+	return d.parse(userAgent, ParseClientHintsFromHeaders(headers), false)
 }
 
-func (d *Detector) parse(userAgent string, hints ClientHints) Result {
+func (d *Detector) parse(userAgent string, hints ClientHints, allowCache bool) Result {
 	if d == nil {
 		d = New()
 	}
@@ -44,6 +46,11 @@ func (d *Detector) parse(userAgent string, hints ClientHints) Result {
 	ua := normalizeUserAgent(userAgent, d.opts.trimWhitespace)
 	if d.opts.maxUserAgentLen > 0 && len(ua) > d.opts.maxUserAgentLen {
 		ua = ua[:d.opts.maxUserAgentLen]
+	}
+	if allowCache && d.cache != nil {
+		if cached, ok := d.cache.get(ua); ok {
+			return cached
+		}
 	}
 
 	bot := parseBot(ua)
@@ -56,6 +63,9 @@ func (d *Detector) parse(userAgent string, hints ClientHints) Result {
 	}
 	if !bot.IsBot {
 		applyClientHints(&result, hints)
+	}
+	if allowCache && d.cache != nil {
+		d.cache.set(ua, result)
 	}
 	return result
 }

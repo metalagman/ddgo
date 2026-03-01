@@ -1,10 +1,12 @@
 package ddgo
 
 const defaultMaxUserAgentLen = 2048
+const defaultResultCacheSize = 256
 
 type options struct {
 	maxUserAgentLen int
 	trimWhitespace  bool
+	resultCacheSize int
 }
 
 // Option configures detector behavior.
@@ -14,6 +16,7 @@ func defaultOptions() options {
 	return options{
 		maxUserAgentLen: defaultMaxUserAgentLen,
 		trimWhitespace:  true,
+		resultCacheSize: defaultResultCacheSize,
 	}
 }
 
@@ -32,5 +35,16 @@ func WithMaxUserAgentLen(max int) Option {
 func WithUserAgentTrimming(enabled bool) Option {
 	return func(cfg *options) {
 		cfg.trimWhitespace = enabled
+	}
+}
+
+// WithResultCacheSize configures a bounded in-memory parse result cache.
+// Set to 0 to disable caching. Negative values are ignored.
+func WithResultCacheSize(size int) Option {
+	return func(cfg *options) {
+		if size < 0 {
+			return
+		}
+		cfg.resultCacheSize = size
 	}
 }
