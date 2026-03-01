@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const upstreamBotFixturePath = "testdata/upstream/bots.yml"
+const upstreamBotFixturePath = "testdata/upstream/fixtures/bots.yml"
 
 type upstreamBotFixture struct {
 	UserAgent string `yaml:"user_agent"`
@@ -26,6 +26,9 @@ type upstreamBotFixture struct {
 
 func TestUpstreamBotFixtures(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping large upstream bot fixture test in short mode")
+	}
 
 	fixtures := loadUpstreamBotFixtures(t)
 	detector := New()
