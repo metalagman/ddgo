@@ -6,7 +6,7 @@
       "url": "https://github.com/matomo-org/device-detector",
       "license": "LGPL-3.0-or-later",
       "snapshot_dir": "sync/current",
-      "upstream_version": "v6.0.0"
+      "upstream_version": "6.5.0"
     }
   ],
   "artifacts": [
@@ -14,7 +14,7 @@
       "path": "sync/compiled.json",
       "sha256": "5a912dc2ca74599e96753382c97b0814c580de7cd8a4cf48212a5644632c3936",
       "manifest_path": "sync/manifest.json",
-      "manifest_sha256": "7f6db591b301c2b87ab90fa7b1b0c56e3d6ed469ea941dcb837c7f101a3becbd",
+      "manifest_sha256": "d6ed83f16a1d9a547451439099e2532471a97967f77813c469135a106741f737",
       "generator": "go run ./cmd/ddsync update --upstream-repo matomo-org/device-detector"
     }
   ]

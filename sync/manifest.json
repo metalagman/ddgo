@@ -1,6 +1,6 @@
 {
   "upstream_repo": "matomo-org/device-detector",
-  "upstream_version": "v6.0.0",
+  "upstream_version": "6.5.0",
   "source_dir": "sync/current",
   "source_files": [
     {
