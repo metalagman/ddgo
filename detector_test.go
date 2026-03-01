@@ -140,12 +140,10 @@ func TestParseOnNilDetector(t *testing.T) {
 	t.Parallel()
 
 	var d *Detector
-	defer func() {
-		if recover() == nil {
-			t.Fatal("expected panic for nil detector")
-		}
-	}()
-	_ = d.Parse("Mozilla/5.0")
+	result := d.Parse("Mozilla/5.0")
+	if result.UserAgent != "Mozilla/5.0" {
+		t.Fatalf("unexpected user agent %q", result.UserAgent)
+	}
 }
 
 func TestParseGooglebot(t *testing.T) {

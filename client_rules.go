@@ -2,6 +2,7 @@ package ddgo
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"sync"
@@ -80,7 +81,8 @@ var (
 func parseClientSnapshot(ua string) (Client, bool) {
 	ruleSets, err := loadClientRules()
 	if err != nil {
-		panic("ddgo: client rules not initialized: " + err.Error())
+		log.Fatalf("ddgo: client rules not initialized: %v", err)
+		return Client{}, false
 	}
 
 	for _, set := range ruleSets {
@@ -97,7 +99,8 @@ func parseClientSnapshot(ua string) (Client, bool) {
 			if engine == "" {
 				engine, err = detectClientEngine(ua)
 				if err != nil {
-					panic("ddgo: client engine rules not initialized: " + err.Error())
+					log.Fatalf("ddgo: client engine rules not initialized: %v", err)
+					return Client{}, false
 				}
 			}
 			engine = normalizeRuleField(engine)

@@ -2,6 +2,7 @@ package ddgo_test
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/metalagman/ddgo"
 )
@@ -9,7 +10,7 @@ import (
 func ExampleNew() {
 	detector, err := ddgo.New()
 	if err != nil {
-		panic(err)
+		log.Fatalf("ddgo.New() failed: %v", err)
 	}
 	result := detector.Parse("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0")
 
@@ -21,7 +22,7 @@ func ExampleNew() {
 func ExampleDetector_Parse() {
 	detector, err := ddgo.New()
 	if err != nil {
-		panic(err)
+		log.Fatalf("ddgo.New() failed: %v", err)
 	}
 	result := detector.Parse("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
 
@@ -33,7 +34,7 @@ func ExampleDetector_Parse() {
 func ExampleDetector_ParseWithClientHints() {
 	detector, err := ddgo.New()
 	if err != nil {
-		panic(err)
+		log.Fatalf("ddgo.New() failed: %v", err)
 	}
 	mobile := true
 	hints := ddgo.ClientHints{
@@ -53,7 +54,7 @@ func ExampleDetector_ParseWithClientHints() {
 func ExampleDetector_ParseWithHeaders() {
 	detector, err := ddgo.New()
 	if err != nil {
-		panic(err)
+		log.Fatalf("ddgo.New() failed: %v", err)
 	}
 	headers := map[string]string{
 		"Sec-CH-UA":                  "\"Not(A:Brand\";v=\"99\", \"Microsoft Edge\";v=\"123.0.0.0\", \"Chromium\";v=\"123.0.0.0\"",
@@ -71,7 +72,7 @@ func ExampleDetector_ParseWithHeaders() {
 func ExampleWithMaxUserAgentLen() {
 	detector, err := ddgo.New(ddgo.WithMaxUserAgentLen(7))
 	if err != nil {
-		panic(err)
+		log.Fatalf("ddgo.New() failed: %v", err)
 	}
 	result := detector.Parse("Mozilla/5.0")
 
@@ -83,7 +84,7 @@ func ExampleWithMaxUserAgentLen() {
 func ExampleWithUserAgentTrimming() {
 	detector, err := ddgo.New(ddgo.WithUserAgentTrimming(false))
 	if err != nil {
-		panic(err)
+		log.Fatalf("ddgo.New() failed: %v", err)
 	}
 	result := detector.Parse("  Mozilla/5.0  ")
 

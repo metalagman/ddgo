@@ -1,6 +1,7 @@
 package ddgo
 
 import (
+	"log"
 	"regexp"
 	"strings"
 )
@@ -36,7 +37,8 @@ var (
 func parseBot(ua string) Bot {
 	rules, err := loadBotRules()
 	if err != nil {
-		panic("ddgo: bot rules not initialized: " + err.Error())
+		log.Fatalf("ddgo: bot rules not initialized: %v", err)
+		return parseBotLegacy(ua)
 	}
 	for _, rule := range rules {
 		if rule.pattern == nil {

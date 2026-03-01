@@ -2,6 +2,7 @@ package ddgo
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"unicode"
@@ -57,7 +58,8 @@ var (
 func parseDeviceSnapshot(ua string) (Device, bool) {
 	rules, err := loadDeviceRules()
 	if err != nil {
-		panic("ddgo: device rules not initialized: " + err.Error())
+		log.Fatalf("ddgo: device rules not initialized: %v", err)
+		return Device{}, false
 	}
 
 	for _, rule := range rules {

@@ -1,6 +1,9 @@
 package ddgo
 
-import "strings"
+import (
+	"log"
+	"strings"
+)
 
 // Detector parses user-agent strings into structured detection results.
 //
@@ -28,11 +31,11 @@ func New(opts ...Option) (*Detector, error) {
 	}, nil
 }
 
-// MustNew creates a detector and panics if initialization fails.
+// MustNew creates a detector and exits the process if initialization fails.
 func MustNew(opts ...Option) *Detector {
 	detector, err := New(opts...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("ddgo: detector initialization failed: %v", err)
 	}
 	return detector
 }
@@ -64,7 +67,7 @@ func (d *Detector) ParseWithHeaders(userAgent string, headers map[string]string)
 
 func (d *Detector) parse(userAgent string, hints ClientHints, allowCache bool) Result {
 	if d == nil {
-		panic("ddgo: Parse called on nil Detector")
+		d = MustNew()
 	}
 
 	ua := normalizeUserAgent(userAgent, d.opts.trimWhitespace)

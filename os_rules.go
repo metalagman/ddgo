@@ -2,6 +2,7 @@ package ddgo
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 
@@ -42,7 +43,8 @@ var (
 func parseOSSnapshot(ua string) (OS, bool) {
 	rules, err := loadOSRules()
 	if err != nil {
-		panic("ddgo: os rules not initialized: " + err.Error())
+		log.Fatalf("ddgo: os rules not initialized: %v", err)
+		return OS{}, false
 	}
 
 	for _, rule := range rules {
