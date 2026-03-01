@@ -7,7 +7,10 @@
 ```go
 import "github.com/metalagman/ddgo"
 
-d := ddgo.New()
+d, err := ddgo.New()
+if err != nil {
+    // handle initialization error
+}
 r := d.Parse("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0")
 // r.Client.Name == "Firefox"
 ```

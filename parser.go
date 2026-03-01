@@ -35,37 +35,36 @@ var (
 
 func parseBot(ua string) Bot {
 	rules, err := loadBotRules()
-	if err == nil {
-		for _, rule := range rules {
-			if rule.pattern == nil {
-				continue
-			}
-			matched, matchErr := rule.pattern.MatchString(ua)
-			if matchErr != nil || !matched {
-				continue
-			}
-			return Bot{
-				IsBot:    true,
-				Name:     rule.name,
-				Category: rule.category,
-				URL:      rule.url,
-				Producer: rule.producer,
-			}
+	if err != nil {
+		panic("ddgo: bot rules not initialized: " + err.Error())
+	}
+	for _, rule := range rules {
+		if rule.pattern == nil {
+			continue
 		}
-
+		matched, matchErr := rule.pattern.MatchString(ua)
+		if matchErr != nil || !matched {
+			continue
+		}
 		return Bot{
-			IsBot:    false,
-			Name:     Unknown,
-			Category: Unknown,
-			URL:      Unknown,
-			Producer: Producer{
-				Name: Unknown,
-				URL:  Unknown,
-			},
+			IsBot:    true,
+			Name:     rule.name,
+			Category: rule.category,
+			URL:      rule.url,
+			Producer: rule.producer,
 		}
 	}
 
-	return parseBotLegacy(ua)
+	return Bot{
+		IsBot:    false,
+		Name:     Unknown,
+		Category: Unknown,
+		URL:      Unknown,
+		Producer: Producer{
+			Name: Unknown,
+			URL:  Unknown,
+		},
+	}
 }
 
 func parseBotLegacy(ua string) Bot {

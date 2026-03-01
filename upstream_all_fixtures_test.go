@@ -84,7 +84,7 @@ func TestUpstreamAllFixturesSmoke(t *testing.T) {
 		t.Fatalf("unexpected fixture count: got %d, want at least 80", len(paths))
 	}
 
-	detector := New()
+	detector := newTestDetector(t)
 	totalCases := 0
 	headerCases := 0
 	expectedBotCases := 0
@@ -168,7 +168,7 @@ func TestUpstreamFixtureDifferentialParity(t *testing.T) {
 		metricByLabel[metric.label] = metric
 	}
 
-	detector := New()
+	detector := newTestDetector(t)
 	totalCases := 0
 	for _, path := range listUpstreamFixturePaths(t) {
 		fixtures := loadUpstreamFixtureFile(t, path)

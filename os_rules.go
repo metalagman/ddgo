@@ -42,7 +42,7 @@ var (
 func parseOSSnapshot(ua string) (OS, bool) {
 	rules, err := loadOSRules()
 	if err != nil {
-		return OS{}, false
+		panic("ddgo: os rules not initialized: " + err.Error())
 	}
 
 	for _, rule := range rules {
@@ -102,7 +102,8 @@ func loadOSRules() ([]osRule, error) {
 			}
 			re, err := compileRuleRegex(item.Regex)
 			if err != nil {
-				continue
+				osRulesErr = fmt.Errorf("compile oss.yml regex %q: %w", item.Regex, err)
+				return
 			}
 
 			versionRules := make([]osVersionRule, 0, len(item.Versions))
@@ -112,7 +113,8 @@ func loadOSRules() ([]osRule, error) {
 				}
 				nestedRegex, nestedErr := compileRuleRegex(nested.Regex)
 				if nestedErr != nil {
-					continue
+					osRulesErr = fmt.Errorf("compile oss.yml nested regex %q: %w", nested.Regex, nestedErr)
+					return
 				}
 				versionRules = append(versionRules, osVersionRule{
 					pattern:         nestedRegex,

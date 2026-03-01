@@ -8,16 +8,16 @@ import (
 func TestNewReturnsDetector(t *testing.T) {
 	t.Parallel()
 
-	d := New()
+	d := newTestDetector(t)
 	if d == nil {
-		t.Fatal("New() returned nil detector")
+		t.Fatal("newTestDetector(t) returned nil detector")
 	}
 }
 
 func TestParseDefaults(t *testing.T) {
 	t.Parallel()
 
-	result := New().Parse("Mozilla/5.0")
+	result := newTestDetector(t).Parse("Mozilla/5.0")
 
 	if result.UserAgent != "Mozilla/5.0" {
 		t.Fatalf("unexpected user agent %q", result.UserAgent)
@@ -42,7 +42,7 @@ func TestParseDefaults(t *testing.T) {
 func TestParseAppliesWhitespaceTrimmingByDefault(t *testing.T) {
 	t.Parallel()
 
-	result := New().Parse("  Mozilla/5.0  ")
+	result := newTestDetector(t).Parse("  Mozilla/5.0  ")
 	if result.UserAgent != "Mozilla/5.0" {
 		t.Fatalf("unexpected user agent after trim %q", result.UserAgent)
 	}
@@ -51,7 +51,7 @@ func TestParseAppliesWhitespaceTrimmingByDefault(t *testing.T) {
 func TestWithUserAgentTrimmingFalse(t *testing.T) {
 	t.Parallel()
 
-	result := New(WithUserAgentTrimming(false)).Parse("  Mozilla/5.0  ")
+	result := newTestDetector(t, WithUserAgentTrimming(false)).Parse("  Mozilla/5.0  ")
 	if result.UserAgent != "  Mozilla/5.0  " {
 		t.Fatalf("unexpected user agent without trim %q", result.UserAgent)
 	}
@@ -60,7 +60,7 @@ func TestWithUserAgentTrimmingFalse(t *testing.T) {
 func TestWithMaxUserAgentLen(t *testing.T) {
 	t.Parallel()
 
-	result := New(WithMaxUserAgentLen(3)).Parse("Mozilla/5.0")
+	result := newTestDetector(t, WithMaxUserAgentLen(3)).Parse("Mozilla/5.0")
 	if result.UserAgent != "Moz" {
 		t.Fatalf("unexpected capped user agent %q", result.UserAgent)
 	}
@@ -69,7 +69,7 @@ func TestWithMaxUserAgentLen(t *testing.T) {
 func TestWithMaxUserAgentLenIgnoresInvalidValue(t *testing.T) {
 	t.Parallel()
 
-	result := New(WithMaxUserAgentLen(0)).Parse("Mozilla/5.0")
+	result := newTestDetector(t, WithMaxUserAgentLen(0)).Parse("Mozilla/5.0")
 	if result.UserAgent != "Mozilla/5.0" {
 		t.Fatalf("expected uncapped user agent, got %q", result.UserAgent)
 	}
@@ -78,7 +78,7 @@ func TestWithMaxUserAgentLenIgnoresInvalidValue(t *testing.T) {
 func TestWithResultCacheSizeZeroDisablesCache(t *testing.T) {
 	t.Parallel()
 
-	detector := New(WithResultCacheSize(0))
+	detector := newTestDetector(t, WithResultCacheSize(0))
 	if detector.cache != nil {
 		t.Fatal("expected cache to be disabled")
 	}
@@ -93,7 +93,7 @@ func TestWithResultCacheInjectsCustomCache(t *testing.T) {
 	t.Parallel()
 
 	cache := &countingCache{}
-	detector := New(WithResultCache(cache))
+	detector := newTestDetector(t, WithResultCache(cache))
 
 	ua := "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
 	_ = detector.Parse(ua)
@@ -110,7 +110,7 @@ func TestWithResultCacheInjectsCustomCache(t *testing.T) {
 func TestWithResultCacheNilDisablesCaching(t *testing.T) {
 	t.Parallel()
 
-	detector := New(WithResultCache(nil))
+	detector := newTestDetector(t, WithResultCache(nil))
 	if detector.cache != nil {
 		t.Fatal("expected nil custom cache to disable caching")
 	}
@@ -140,17 +140,19 @@ func TestParseOnNilDetector(t *testing.T) {
 	t.Parallel()
 
 	var d *Detector
-	result := d.Parse("Mozilla/5.0")
-	if result.UserAgent != "Mozilla/5.0" {
-		t.Fatalf("unexpected user agent %q", result.UserAgent)
-	}
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for nil detector")
+		}
+	}()
+	_ = d.Parse("Mozilla/5.0")
 }
 
 func TestParseGooglebot(t *testing.T) {
 	t.Parallel()
 
 	ua := "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
-	result := New().Parse(ua)
+	result := newTestDetector(t).Parse(ua)
 
 	if !result.Bot.IsBot {
 		t.Fatal("expected bot detection")
@@ -170,7 +172,7 @@ func TestParseFirefoxWindowsDesktop(t *testing.T) {
 	t.Parallel()
 
 	ua := "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
-	result := New().Parse(ua)
+	result := newTestDetector(t).Parse(ua)
 
 	if result.Bot.IsBot {
 		t.Fatal("did not expect bot")
@@ -193,7 +195,7 @@ func TestParseAndroidChromeSamsung(t *testing.T) {
 	t.Parallel()
 
 	ua := "Mozilla/5.0 (Linux; Android 14; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
-	result := New().Parse(ua)
+	result := newTestDetector(t).Parse(ua)
 
 	if result.Client.Name != "Chrome Mobile" {
 		t.Fatalf("unexpected client name %q", result.Client.Name)
@@ -210,7 +212,7 @@ func TestParseIPhoneSafari(t *testing.T) {
 	t.Parallel()
 
 	ua := "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1"
-	result := New().Parse(ua)
+	result := newTestDetector(t).Parse(ua)
 
 	if result.Client.Name != "Mobile Safari" {
 		t.Fatalf("unexpected client name %q", result.Client.Name)
@@ -226,7 +228,7 @@ func TestParseIPhoneSafari(t *testing.T) {
 func TestParseCurl(t *testing.T) {
 	t.Parallel()
 
-	result := New().Parse("curl/8.7.1")
+	result := newTestDetector(t).Parse("curl/8.7.1")
 	if result.Client.Type != "Library" || result.Client.Name != "curl" || result.Client.Version != "8.7.1" {
 		t.Fatalf("unexpected curl client %+v", result.Client)
 	}
@@ -236,7 +238,7 @@ func TestParseEdgeAndroidAlias(t *testing.T) {
 	t.Parallel()
 
 	ua := "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36 EdgA/122.0.2365.66"
-	result := New().Parse(ua)
+	result := newTestDetector(t).Parse(ua)
 
 	if result.Client.Name != "Microsoft Edge" {
 		t.Fatalf("unexpected client name %q", result.Client.Name)
@@ -253,7 +255,7 @@ func TestParseChromeIOSAlias(t *testing.T) {
 	t.Parallel()
 
 	ua := "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/122.0.6261.69 Mobile/15E148 Safari/604.1"
-	result := New().Parse(ua)
+	result := newTestDetector(t).Parse(ua)
 
 	if result.Client.Name != "Chrome Mobile iOS" {
 		t.Fatalf("unexpected client name %q", result.Client.Name)
@@ -281,7 +283,7 @@ func TestParseWithClientHints(t *testing.T) {
 		Mobile:          boolPtr(true),
 	}
 
-	result := New().ParseWithClientHints("Mozilla/5.0", hints)
+	result := newTestDetector(t).ParseWithClientHints("Mozilla/5.0", hints)
 	if result.Client.Name != "Chrome" || result.Client.Version != "122.0.6261.128" {
 		t.Fatalf("unexpected client %+v", result.Client)
 	}
@@ -302,7 +304,7 @@ func TestParseWithHeaders(t *testing.T) {
 		"Sec-CH-UA-Platform-Version": "\"15.0.0\"",
 		"Sec-CH-UA-Mobile":           "?0",
 	}
-	result := New().ParseWithHeaders("Mozilla/5.0", headers)
+	result := newTestDetector(t).ParseWithHeaders("Mozilla/5.0", headers)
 	if result.Client.Name != "Microsoft Edge" || result.Client.Version != "123.0.0.0" {
 		t.Fatalf("unexpected client %+v", result.Client)
 	}
@@ -324,7 +326,7 @@ func TestParseWithClientHintsBotPrecedence(t *testing.T) {
 		Platform: "Android",
 		Mobile:   boolPtr(true),
 	}
-	result := New().ParseWithClientHints("Googlebot/2.1", hints)
+	result := newTestDetector(t).ParseWithClientHints("Googlebot/2.1", hints)
 	if !result.Bot.IsBot {
 		t.Fatal("expected bot detection")
 	}
@@ -340,7 +342,7 @@ func TestParseNormalizesWhitespace(t *testing.T) {
 	t.Parallel()
 
 	ua := "\t Mozilla/5.0 \n (Windows NT 10.0; Win64; x64; rv:124.0)\r\nGecko/20100101 Firefox/124.0 \t"
-	result := New().Parse(ua)
+	result := newTestDetector(t).Parse(ua)
 	if result.UserAgent != "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0" {
 		t.Fatalf("unexpected normalized user agent %q", result.UserAgent)
 	}
@@ -352,7 +354,7 @@ func TestParseNormalizesWhitespace(t *testing.T) {
 func TestParseConcurrentAccess(t *testing.T) {
 	t.Parallel()
 
-	detector := New(WithResultCacheSize(32))
+	detector := newTestDetector(t, WithResultCacheSize(32))
 	userAgents := []string{
 		"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",

@@ -57,7 +57,7 @@ var (
 func parseDeviceSnapshot(ua string) (Device, bool) {
 	rules, err := loadDeviceRules()
 	if err != nil {
-		return Device{}, false
+		panic("ddgo: device rules not initialized: " + err.Error())
 	}
 
 	for _, rule := range rules {
@@ -128,7 +128,8 @@ func loadDeviceRules() ([]deviceRule, error) {
 
 				var yamlRule deviceYAMLBrandRule
 				if err := ruleNode.Decode(&yamlRule); err != nil {
-					continue
+					deviceRulesErr = fmt.Errorf("decode %s rule for brand %q: %w", path, strings.TrimSpace(brandNode.Value), err)
+					return
 				}
 				if strings.TrimSpace(yamlRule.Regex) == "" {
 					continue
@@ -136,7 +137,8 @@ func loadDeviceRules() ([]deviceRule, error) {
 
 				re, err := compileRuleRegex(yamlRule.Regex)
 				if err != nil {
-					continue
+					deviceRulesErr = fmt.Errorf("compile %s regex %q: %w", path, yamlRule.Regex, err)
+					return
 				}
 
 				modelRules := make([]deviceModelRule, 0, len(yamlRule.Models))
@@ -146,7 +148,8 @@ func loadDeviceRules() ([]deviceRule, error) {
 					}
 					modelRegex, modelErr := compileRuleRegex(modelRule.Regex)
 					if modelErr != nil {
-						continue
+						deviceRulesErr = fmt.Errorf("compile %s model regex %q: %w", path, modelRule.Regex, modelErr)
+						return
 					}
 					modelRules = append(modelRules, deviceModelRule{
 						pattern:       modelRegex,

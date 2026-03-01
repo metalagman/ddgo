@@ -31,7 +31,7 @@ func TestUpstreamBotFixtures(t *testing.T) {
 	}
 
 	fixtures := loadUpstreamBotFixtures(t)
-	detector := New()
+	detector := newTestDetector(t)
 
 	var detectionMisses []string
 	var nameMismatches []string

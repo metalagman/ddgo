@@ -4,7 +4,10 @@ import "testing"
 
 func BenchmarkParseFirefox(b *testing.B) {
 	b.ReportAllocs()
-	detector := New(WithResultCacheSize(0))
+	detector, err := New(WithResultCacheSize(0))
+	if err != nil {
+		b.Fatalf("New() failed: %v", err)
+	}
 	ua := "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
 	for i := 0; i < b.N; i++ {
 		_ = detector.Parse(ua)
@@ -13,7 +16,10 @@ func BenchmarkParseFirefox(b *testing.B) {
 
 func BenchmarkParseGooglebot(b *testing.B) {
 	b.ReportAllocs()
-	detector := New(WithResultCacheSize(0))
+	detector, err := New(WithResultCacheSize(0))
+	if err != nil {
+		b.Fatalf("New() failed: %v", err)
+	}
 	ua := "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
 	for i := 0; i < b.N; i++ {
 		_ = detector.Parse(ua)
@@ -22,7 +28,10 @@ func BenchmarkParseGooglebot(b *testing.B) {
 
 func BenchmarkParseCachedFirefox(b *testing.B) {
 	b.ReportAllocs()
-	detector := New(WithResultCacheSize(256))
+	detector, err := New(WithResultCacheSize(256))
+	if err != nil {
+		b.Fatalf("New() failed: %v", err)
+	}
 	ua := "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
 	for i := 0; i < b.N; i++ {
 		_ = detector.Parse(ua)
@@ -31,7 +40,10 @@ func BenchmarkParseCachedFirefox(b *testing.B) {
 
 func BenchmarkParseWithHeaders(b *testing.B) {
 	b.ReportAllocs()
-	detector := New()
+	detector, err := New()
+	if err != nil {
+		b.Fatalf("New() failed: %v", err)
+	}
 	headers := map[string]string{
 		"Sec-CH-UA-Full-Version-List": "\"Not A;Brand\";v=\"24\", \"Chromium\";v=\"122.0.6261.128\", \"Google Chrome\";v=\"122.0.6261.128\"",
 		"Sec-CH-UA-Platform":          "\"Android\"",

@@ -7,7 +7,10 @@ import (
 )
 
 func ExampleNew() {
-	detector := ddgo.New()
+	detector, err := ddgo.New()
+	if err != nil {
+		panic(err)
+	}
 	result := detector.Parse("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0")
 
 	fmt.Printf("%s %s\n", result.Client.Name, result.Client.Version)
@@ -16,7 +19,10 @@ func ExampleNew() {
 }
 
 func ExampleDetector_Parse() {
-	detector := ddgo.New()
+	detector, err := ddgo.New()
+	if err != nil {
+		panic(err)
+	}
 	result := detector.Parse("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
 
 	fmt.Printf("is_bot=%t name=%s device=%s\n", result.Bot.IsBot, result.Bot.Name, result.Device.Type)
@@ -25,7 +31,10 @@ func ExampleDetector_Parse() {
 }
 
 func ExampleDetector_ParseWithClientHints() {
-	detector := ddgo.New()
+	detector, err := ddgo.New()
+	if err != nil {
+		panic(err)
+	}
 	mobile := true
 	hints := ddgo.ClientHints{
 		Brands:          []ddgo.ClientHintBrand{{Name: "Google Chrome", Version: "122.0.6261.128"}},
@@ -42,7 +51,10 @@ func ExampleDetector_ParseWithClientHints() {
 }
 
 func ExampleDetector_ParseWithHeaders() {
-	detector := ddgo.New()
+	detector, err := ddgo.New()
+	if err != nil {
+		panic(err)
+	}
 	headers := map[string]string{
 		"Sec-CH-UA":                  "\"Not(A:Brand\";v=\"99\", \"Microsoft Edge\";v=\"123.0.0.0\", \"Chromium\";v=\"123.0.0.0\"",
 		"Sec-CH-UA-Platform":         "\"Windows\"",
@@ -57,7 +69,10 @@ func ExampleDetector_ParseWithHeaders() {
 }
 
 func ExampleWithMaxUserAgentLen() {
-	detector := ddgo.New(ddgo.WithMaxUserAgentLen(7))
+	detector, err := ddgo.New(ddgo.WithMaxUserAgentLen(7))
+	if err != nil {
+		panic(err)
+	}
 	result := detector.Parse("Mozilla/5.0")
 
 	fmt.Println(result.UserAgent)
@@ -66,7 +81,10 @@ func ExampleWithMaxUserAgentLen() {
 }
 
 func ExampleWithUserAgentTrimming() {
-	detector := ddgo.New(ddgo.WithUserAgentTrimming(false))
+	detector, err := ddgo.New(ddgo.WithUserAgentTrimming(false))
+	if err != nil {
+		panic(err)
+	}
 	result := detector.Parse("  Mozilla/5.0  ")
 
 	fmt.Printf("%q\n", result.UserAgent)

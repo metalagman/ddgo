@@ -11,7 +11,7 @@ type Detector struct {
 }
 
 // New creates a detector with optional configuration overrides.
-func New(opts ...Option) *Detector {
+func New(opts ...Option) (*Detector, error) {
 	cfg := defaultOptions()
 	for _, opt := range opts {
 		if opt == nil {
@@ -19,24 +19,36 @@ func New(opts ...Option) *Detector {
 		}
 		opt(&cfg)
 	}
+	if err := initParserRuntime(); err != nil {
+		return nil, err
+	}
 	return &Detector{
 		opts:  cfg,
 		cache: cfg.cache(),
+	}, nil
+}
+
+// MustNew creates a detector and panics if initialization fails.
+func MustNew(opts ...Option) *Detector {
+	detector, err := New(opts...)
+	if err != nil {
+		panic(err)
 	}
+	return detector
 }
 
 // Parse analyzes a user-agent string and returns a detection result.
 //
 // Parse can return cached results for identical normalized user-agent inputs.
-// If d is nil, Parse behaves as if called on New().
+// Parse panics if called on a nil Detector.
 func (d *Detector) Parse(userAgent string) Result {
 	return d.parse(userAgent, ClientHints{}, true)
 }
 
 // ParseWithClientHints analyzes a user-agent string with explicit client hints.
 //
-// Hint-based parsing bypasses the internal Parse cache. If d is nil,
-// ParseWithClientHints behaves as if called on New().
+// Hint-based parsing bypasses the internal Parse cache. ParseWithClientHints
+// panics if called on a nil Detector.
 func (d *Detector) ParseWithClientHints(userAgent string, hints ClientHints) Result {
 	return d.parse(userAgent, hints, false)
 }
@@ -44,15 +56,15 @@ func (d *Detector) ParseWithClientHints(userAgent string, hints ClientHints) Res
 // ParseWithHeaders analyzes a user-agent string and Sec-CH-UA style headers.
 //
 // This helper normalizes headers via ParseClientHintsFromHeaders and then
-// delegates to ParseWithClientHints. If d is nil, ParseWithHeaders behaves as
-// if called on New().
+// delegates to ParseWithClientHints. ParseWithHeaders panics if called on a nil
+// Detector.
 func (d *Detector) ParseWithHeaders(userAgent string, headers map[string]string) Result {
 	return d.parse(userAgent, ParseClientHintsFromHeaders(headers), false)
 }
 
 func (d *Detector) parse(userAgent string, hints ClientHints, allowCache bool) Result {
 	if d == nil {
-		d = New()
+		panic("ddgo: Parse called on nil Detector")
 	}
 
 	ua := normalizeUserAgent(userAgent, d.opts.trimWhitespace)

@@ -80,7 +80,7 @@ var (
 func parseClientSnapshot(ua string) (Client, bool) {
 	ruleSets, err := loadClientRules()
 	if err != nil {
-		return Client{}, false
+		panic("ddgo: client rules not initialized: " + err.Error())
 	}
 
 	for _, set := range ruleSets {
@@ -95,7 +95,10 @@ func parseClientSnapshot(ua string) (Client, bool) {
 
 			engine := strings.TrimSpace(rule.engineDefault)
 			if engine == "" {
-				engine = detectClientEngine(ua)
+				engine, err = detectClientEngine(ua)
+				if err != nil {
+					panic("ddgo: client engine rules not initialized: " + err.Error())
+				}
 			}
 			engine = normalizeRuleField(engine)
 
@@ -146,7 +149,8 @@ func loadClientRules() ([]clientRuleSet, error) {
 				}
 				re, err := compileRuleRegex(item.Regex)
 				if err != nil {
-					continue
+					clientRulesErr = fmt.Errorf("compile %s regex %q: %w", source.path, item.Regex, err)
+					return
 				}
 				rules = append(rules, clientRule{
 					pattern:        re,
@@ -197,7 +201,8 @@ func loadClientEngineRules() ([]clientEngineRule, error) {
 			}
 			re, err := compileRuleRegex(item.Regex)
 			if err != nil {
-				continue
+				clientEngineErr = fmt.Errorf("compile client/browser_engine.yml regex %q: %w", item.Regex, err)
+				return
 			}
 			compiled = append(compiled, clientEngineRule{
 				pattern: re,
@@ -213,29 +218,30 @@ func loadClientEngineRules() ([]clientEngineRule, error) {
 	return clientEngines, nil
 }
 
-func detectClientEngine(ua string) string {
+func detectClientEngine(ua string) (string, error) {
 	rules, err := loadClientEngineRules()
-	if err == nil {
-		for _, rule := range rules {
-			if _, ok := matchRegexp2String(rule.pattern, ua); ok {
-				return rule.name
-			}
+	if err != nil {
+		return Unknown, err
+	}
+	for _, rule := range rules {
+		if _, ok := matchRegexp2String(rule.pattern, ua); ok {
+			return rule.name, nil
 		}
 	}
 
 	switch {
 	case reClientEdge.MatchString(ua), reClientEdgeAlt.MatchString(ua), reClientOpera.MatchString(ua), reClientChrome.MatchString(ua), reClientChromeOS.MatchString(ua):
-		return "Blink"
+		return "Blink", nil
 	case reWebKit.MatchString(ua):
-		return "WebKit"
+		return "WebKit", nil
 	case reGeckoRV.MatchString(ua), strings.Contains(ua, "Gecko/"):
-		return "Gecko"
+		return "Gecko", nil
 	case strings.Contains(ua, "Trident/"):
-		return "Trident"
+		return "Trident", nil
 	case strings.Contains(ua, "Presto/"):
-		return "Presto"
+		return "Presto", nil
 	default:
-		return Unknown
+		return Unknown, nil
 	}
 }
 

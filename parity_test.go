@@ -61,7 +61,7 @@ func TestParityHeaderHintEquivalence(t *testing.T) {
 	t.Parallel()
 
 	cases := loadParityCases(t)
-	detector := New()
+	detector := newTestDetector(t)
 	for _, tc := range cases {
 		if len(tc.Headers) == 0 {
 			continue
@@ -104,7 +104,7 @@ func loadParityCases(t *testing.T) []parityCase {
 func runParityCases(t *testing.T, cases []parityCase) map[string]Result {
 	t.Helper()
 
-	detector := New()
+	detector := newTestDetector(t)
 	results := make(map[string]Result, len(cases))
 	for _, tc := range cases {
 		if tc.ID == "" {
