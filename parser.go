@@ -128,7 +128,7 @@ func parseBotLegacy(ua string) Bot {
 	}
 }
 
-func parseClient(ua string, isBot bool) Client {
+func parseClientLegacy(ua string, isBot bool) Client {
 	if isBot {
 		return unknownClient()
 	}
@@ -233,7 +233,7 @@ func parseClient(ua string, isBot bool) Client {
 	return unknownClient()
 }
 
-func parseOS(ua string) OS {
+func parseOSLegacy(ua string) OS {
 	if matches := reOSWindows.FindStringSubmatch(ua); len(matches) > 1 {
 		return OS{
 			Name:     "Windows",
@@ -277,7 +277,7 @@ func parseOS(ua string) OS {
 	}
 }
 
-func parseDevice(ua string, isBot bool) Device {
+func parseDeviceLegacy(ua string, isBot bool) Device {
 	if isBot {
 		return Device{
 			Type:  "Bot",

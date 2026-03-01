@@ -7,7 +7,7 @@ import "strings"
 // A Detector is safe for concurrent use by multiple goroutines.
 type Detector struct {
 	opts  options
-	cache *resultCache
+	cache ResultCache
 }
 
 // New creates a detector with optional configuration overrides.
@@ -21,7 +21,7 @@ func New(opts ...Option) *Detector {
 	}
 	return &Detector{
 		opts:  cfg,
-		cache: newResultCache(cfg.resultCacheSize),
+		cache: cfg.cache(),
 	}
 }
 
@@ -60,7 +60,7 @@ func (d *Detector) parse(userAgent string, hints ClientHints, allowCache bool) R
 		ua = ua[:d.opts.maxUserAgentLen]
 	}
 	if allowCache && d.cache != nil {
-		if cached, ok := d.cache.get(ua); ok {
+		if cached, ok := d.cache.Get(ua); ok {
 			return cached
 		}
 	}
@@ -77,7 +77,7 @@ func (d *Detector) parse(userAgent string, hints ClientHints, allowCache bool) R
 		applyClientHints(&result, hints)
 	}
 	if allowCache && d.cache != nil {
-		d.cache.set(ua, result)
+		d.cache.Set(ua, result)
 	}
 	return result
 }

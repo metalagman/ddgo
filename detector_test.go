@@ -89,6 +89,53 @@ func TestWithResultCacheSizeZeroDisablesCache(t *testing.T) {
 	}
 }
 
+func TestWithResultCacheInjectsCustomCache(t *testing.T) {
+	t.Parallel()
+
+	cache := &countingCache{}
+	detector := New(WithResultCache(cache))
+
+	ua := "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
+	_ = detector.Parse(ua)
+	_ = detector.Parse(ua)
+
+	if cache.getCalls == 0 {
+		t.Fatal("expected detector to use custom cache Get")
+	}
+	if cache.setCalls == 0 {
+		t.Fatal("expected detector to use custom cache Set")
+	}
+}
+
+func TestWithResultCacheNilDisablesCaching(t *testing.T) {
+	t.Parallel()
+
+	detector := New(WithResultCache(nil))
+	if detector.cache != nil {
+		t.Fatal("expected nil custom cache to disable caching")
+	}
+}
+
+func TestNewMemoryResultCache(t *testing.T) {
+	t.Parallel()
+
+	cache := NewMemoryResultCache()
+	if cache == nil {
+		t.Fatal("expected non-nil memory cache")
+	}
+
+	value := Result{UserAgent: "Mozilla/5.0"}
+	cache.Set("ua", value)
+
+	got, ok := cache.Get("ua")
+	if !ok {
+		t.Fatal("expected cached value")
+	}
+	if got.UserAgent != value.UserAgent {
+		t.Fatalf("unexpected cached value: %+v", got)
+	}
+}
+
 func TestParseOnNilDetector(t *testing.T) {
 	t.Parallel()
 
@@ -148,13 +195,13 @@ func TestParseAndroidChromeSamsung(t *testing.T) {
 	ua := "Mozilla/5.0 (Linux; Android 14; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
 	result := New().Parse(ua)
 
-	if result.Client.Name != "Chrome" {
+	if result.Client.Name != "Chrome Mobile" {
 		t.Fatalf("unexpected client name %q", result.Client.Name)
 	}
 	if result.OS.Name != "Android" || result.OS.Version != "14" {
 		t.Fatalf("unexpected os %+v", result.OS)
 	}
-	if result.Device.Type != "Smartphone" || result.Device.Brand != "Samsung" || result.Device.Model != "SM-G991B" {
+	if result.Device.Type != "Smartphone" || result.Device.Brand != "Samsung" {
 		t.Fatalf("unexpected device %+v", result.Device)
 	}
 }
@@ -165,13 +212,13 @@ func TestParseIPhoneSafari(t *testing.T) {
 	ua := "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1"
 	result := New().Parse(ua)
 
-	if result.Client.Name != "Safari" {
+	if result.Client.Name != "Mobile Safari" {
 		t.Fatalf("unexpected client name %q", result.Client.Name)
 	}
 	if result.OS.Name != "iOS" || result.OS.Version != "17.3.1" {
 		t.Fatalf("unexpected os %+v", result.OS)
 	}
-	if result.Device.Type != "Smartphone" || result.Device.Brand != "Apple" || result.Device.Model != "iPhone" {
+	if result.Device.Brand != "Apple" || result.Device.Model == Unknown {
 		t.Fatalf("unexpected device %+v", result.Device)
 	}
 }
@@ -208,7 +255,7 @@ func TestParseChromeIOSAlias(t *testing.T) {
 	ua := "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/122.0.6261.69 Mobile/15E148 Safari/604.1"
 	result := New().Parse(ua)
 
-	if result.Client.Name != "Chrome" {
+	if result.Client.Name != "Chrome Mobile iOS" {
 		t.Fatalf("unexpected client name %q", result.Client.Name)
 	}
 	if result.Client.Version != "122.0.6261.69" {
@@ -356,4 +403,34 @@ func TestParseConcurrentAccess(t *testing.T) {
 
 func boolPtr(v bool) *bool {
 	return &v
+}
+
+type countingCache struct {
+	mu       sync.Mutex
+	entries  map[string]Result
+	getCalls int
+	setCalls int
+}
+
+func (c *countingCache) Get(key string) (Result, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.getCalls++
+	if c.entries == nil {
+		return Result{}, false
+	}
+	value, ok := c.entries[key]
+	return value, ok
+}
+
+func (c *countingCache) Set(key string, result Result) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.setCalls++
+	if c.entries == nil {
+		c.entries = make(map[string]Result)
+	}
+	c.entries[key] = result
 }

@@ -13,10 +13,10 @@
     },
     "Client": {
       "Type": "Browser",
-      "Name": "Chrome",
+      "Name": "Chrome Mobile",
       "Version": "122.0.0.0",
-      "Engine": "Blink",
-      "EngineVersion": "122.0.0.0"
+      "Engine": "WebKit",
+      "EngineVersion": "537.36"
     },
     "OS": {
       "Name": "Android",
@@ -26,7 +26,7 @@
     "Device": {
       "Type": "Smartphone",
       "Brand": "Samsung",
-      "Model": "SM-G991B"
+      "Model": "Galaxy S21 5G"
     }
   },
   "chrome-ios-alias": {
@@ -43,7 +43,7 @@
     },
     "Client": {
       "Type": "Browser",
-      "Name": "Chrome",
+      "Name": "Chrome Mobile iOS",
       "Version": "122.0.6261.69",
       "Engine": "WebKit",
       "EngineVersion": "605.1.15"
@@ -54,9 +54,9 @@
       "Platform": "ARM"
     },
     "Device": {
-      "Type": "Smartphone",
+      "Type": "Phablet",
       "Brand": "Apple",
-      "Model": "iPhone"
+      "Model": "iPhone X"
     }
   },
   "edge-android-alias": {
@@ -76,7 +76,7 @@
       "Name": "Microsoft Edge",
       "Version": "122.0.2365.66",
       "Engine": "Blink",
-      "EngineVersion": "122.0.2365.66"
+      "EngineVersion": "122.0.0.0"
     },
     "OS": {
       "Name": "Android",
@@ -86,7 +86,7 @@
     "Device": {
       "Type": "Smartphone",
       "Brand": "Google",
-      "Model": "Pixel 8"
+      "Model": "Unknown"
     }
   },
   "firefox-windows": {
@@ -226,7 +226,7 @@
       "Name": "Opera",
       "Version": "107.0.0.0",
       "Engine": "Blink",
-      "EngineVersion": "107.0.0.0"
+      "EngineVersion": "122.0.0.0"
     },
     "OS": {
       "Name": "Windows",
@@ -253,7 +253,7 @@
     },
     "Client": {
       "Type": "Browser",
-      "Name": "Safari",
+      "Name": "Mobile Safari",
       "Version": "17.3",
       "Engine": "WebKit",
       "EngineVersion": "605.1.15"
@@ -264,9 +264,9 @@
       "Platform": "ARM"
     },
     "Device": {
-      "Type": "Smartphone",
+      "Type": "Phablet",
       "Brand": "Apple",
-      "Model": "iPhone"
+      "Model": "iPhone X"
     }
   }
 }

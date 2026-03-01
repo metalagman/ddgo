@@ -7,6 +7,8 @@ type options struct {
 	maxUserAgentLen int
 	trimWhitespace  bool
 	resultCacheSize int
+	resultCache     ResultCache
+	cacheSet        bool
 }
 
 // Option configures Detector behavior.
@@ -50,4 +52,21 @@ func WithResultCacheSize(size int) Option {
 		}
 		cfg.resultCacheSize = size
 	}
+}
+
+// WithResultCache configures a custom parse result cache implementation.
+//
+// Passing nil explicitly disables caching.
+func WithResultCache(cache ResultCache) Option {
+	return func(cfg *options) {
+		cfg.resultCache = cache
+		cfg.cacheSet = true
+	}
+}
+
+func (cfg options) cache() ResultCache {
+	if cfg.cacheSet {
+		return cfg.resultCache
+	}
+	return newResultCache(cfg.resultCacheSize)
 }
