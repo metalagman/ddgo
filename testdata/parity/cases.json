@@ -1,0 +1,60 @@
+[
+  {
+    "id": "googlebot",
+    "source": "matomo-seed: bots.yml/googlebot",
+    "user_agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+  },
+  {
+    "id": "firefox-windows",
+    "source": "matomo-known: firefox-desktop",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
+  },
+  {
+    "id": "chrome-android-samsung",
+    "source": "matomo-known: chrome-android",
+    "user_agent": "Mozilla/5.0 (Linux; Android 14; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
+  },
+  {
+    "id": "safari-ios",
+    "source": "matomo-known: safari-ios",
+    "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1"
+  },
+  {
+    "id": "edge-android-alias",
+    "source": "matomo-known: edge-alias-edga",
+    "user_agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36 EdgA/122.0.2365.66"
+  },
+  {
+    "id": "chrome-ios-alias",
+    "source": "matomo-known: chrome-alias-crios",
+    "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/122.0.6261.69 Mobile/15E148 Safari/604.1"
+  },
+  {
+    "id": "opera-alias-opr",
+    "source": "matomo-known: opera-alias-opr",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 OPR/107.0.0.0"
+  },
+  {
+    "id": "hints-edge-windows",
+    "source": "sec-ch-ua: edge-windows",
+    "user_agent": "Mozilla/5.0",
+    "headers": {
+      "Sec-CH-UA": "\"Not(A:Brand\";v=\"99\", \"Microsoft Edge\";v=\"123.0.0.0\", \"Chromium\";v=\"123.0.0.0\"",
+      "Sec-CH-UA-Platform": "\"Windows\"",
+      "Sec-CH-UA-Platform-Version": "\"15.0.0\"",
+      "Sec-CH-UA-Mobile": "?0"
+    }
+  },
+  {
+    "id": "hints-chrome-android",
+    "source": "sec-ch-ua: chrome-android",
+    "user_agent": "Mozilla/5.0",
+    "headers": {
+      "Sec-CH-UA-Full-Version-List": "\"Not A;Brand\";v=\"24\", \"Chromium\";v=\"122.0.6261.128\", \"Google Chrome\";v=\"122.0.6261.128\"",
+      "Sec-CH-UA-Platform": "\"Android\"",
+      "Sec-CH-UA-Platform-Version": "\"14.0.0\"",
+      "Sec-CH-UA-Model": "\"SM-G991B\"",
+      "Sec-CH-UA-Mobile": "?1"
+    }
+  }
+]

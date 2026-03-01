@@ -1,0 +1,272 @@
+{
+  "chrome-android-samsung": {
+    "UserAgent": "Mozilla/5.0 (Linux; Android 14; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
+    "Bot": {
+      "IsBot": false,
+      "Name": "Unknown",
+      "Category": "Unknown",
+      "URL": "Unknown",
+      "Producer": {
+        "Name": "Unknown",
+        "URL": "Unknown"
+      }
+    },
+    "Client": {
+      "Type": "Browser",
+      "Name": "Chrome",
+      "Version": "122.0.0.0",
+      "Engine": "Blink",
+      "EngineVersion": "122.0.0.0"
+    },
+    "OS": {
+      "Name": "Android",
+      "Version": "14",
+      "Platform": "ARM"
+    },
+    "Device": {
+      "Type": "Smartphone",
+      "Brand": "Samsung",
+      "Model": "SM-G991B"
+    }
+  },
+  "chrome-ios-alias": {
+    "UserAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/122.0.6261.69 Mobile/15E148 Safari/604.1",
+    "Bot": {
+      "IsBot": false,
+      "Name": "Unknown",
+      "Category": "Unknown",
+      "URL": "Unknown",
+      "Producer": {
+        "Name": "Unknown",
+        "URL": "Unknown"
+      }
+    },
+    "Client": {
+      "Type": "Browser",
+      "Name": "Chrome",
+      "Version": "122.0.6261.69",
+      "Engine": "WebKit",
+      "EngineVersion": "605.1.15"
+    },
+    "OS": {
+      "Name": "iOS",
+      "Version": "17.3",
+      "Platform": "ARM"
+    },
+    "Device": {
+      "Type": "Smartphone",
+      "Brand": "Apple",
+      "Model": "iPhone"
+    }
+  },
+  "edge-android-alias": {
+    "UserAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36 EdgA/122.0.2365.66",
+    "Bot": {
+      "IsBot": false,
+      "Name": "Unknown",
+      "Category": "Unknown",
+      "URL": "Unknown",
+      "Producer": {
+        "Name": "Unknown",
+        "URL": "Unknown"
+      }
+    },
+    "Client": {
+      "Type": "Browser",
+      "Name": "Microsoft Edge",
+      "Version": "122.0.2365.66",
+      "Engine": "Blink",
+      "EngineVersion": "122.0.2365.66"
+    },
+    "OS": {
+      "Name": "Android",
+      "Version": "14",
+      "Platform": "ARM"
+    },
+    "Device": {
+      "Type": "Smartphone",
+      "Brand": "Google",
+      "Model": "Pixel 8"
+    }
+  },
+  "firefox-windows": {
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
+    "Bot": {
+      "IsBot": false,
+      "Name": "Unknown",
+      "Category": "Unknown",
+      "URL": "Unknown",
+      "Producer": {
+        "Name": "Unknown",
+        "URL": "Unknown"
+      }
+    },
+    "Client": {
+      "Type": "Browser",
+      "Name": "Firefox",
+      "Version": "124.0",
+      "Engine": "Gecko",
+      "EngineVersion": "124.0"
+    },
+    "OS": {
+      "Name": "Windows",
+      "Version": "10",
+      "Platform": "x64"
+    },
+    "Device": {
+      "Type": "Desktop",
+      "Brand": "Unknown",
+      "Model": "Unknown"
+    }
+  },
+  "googlebot": {
+    "UserAgent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "Bot": {
+      "IsBot": true,
+      "Name": "Googlebot",
+      "Category": "Search bot",
+      "URL": "https://www.google.com/bot.html",
+      "Producer": {
+        "Name": "Google Inc.",
+        "URL": "https://www.google.com"
+      }
+    },
+    "Client": {
+      "Type": "Unknown",
+      "Name": "Unknown",
+      "Version": "Unknown",
+      "Engine": "Unknown",
+      "EngineVersion": "Unknown"
+    },
+    "OS": {
+      "Name": "Unknown",
+      "Version": "Unknown",
+      "Platform": "Unknown"
+    },
+    "Device": {
+      "Type": "Bot",
+      "Brand": "Unknown",
+      "Model": "Unknown"
+    }
+  },
+  "hints-chrome-android": {
+    "UserAgent": "Mozilla/5.0",
+    "Bot": {
+      "IsBot": false,
+      "Name": "Unknown",
+      "Category": "Unknown",
+      "URL": "Unknown",
+      "Producer": {
+        "Name": "Unknown",
+        "URL": "Unknown"
+      }
+    },
+    "Client": {
+      "Type": "Browser",
+      "Name": "Chrome",
+      "Version": "122.0.6261.128",
+      "Engine": "Blink",
+      "EngineVersion": "122.0.6261.128"
+    },
+    "OS": {
+      "Name": "Android",
+      "Version": "14",
+      "Platform": "ARM"
+    },
+    "Device": {
+      "Type": "Smartphone",
+      "Brand": "Samsung",
+      "Model": "SM-G991B"
+    }
+  },
+  "hints-edge-windows": {
+    "UserAgent": "Mozilla/5.0",
+    "Bot": {
+      "IsBot": false,
+      "Name": "Unknown",
+      "Category": "Unknown",
+      "URL": "Unknown",
+      "Producer": {
+        "Name": "Unknown",
+        "URL": "Unknown"
+      }
+    },
+    "Client": {
+      "Type": "Browser",
+      "Name": "Microsoft Edge",
+      "Version": "123.0.0.0",
+      "Engine": "Blink",
+      "EngineVersion": "123.0.0.0"
+    },
+    "OS": {
+      "Name": "Windows",
+      "Version": "15",
+      "Platform": "x64"
+    },
+    "Device": {
+      "Type": "Desktop",
+      "Brand": "Unknown",
+      "Model": "Unknown"
+    }
+  },
+  "opera-alias-opr": {
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 OPR/107.0.0.0",
+    "Bot": {
+      "IsBot": false,
+      "Name": "Unknown",
+      "Category": "Unknown",
+      "URL": "Unknown",
+      "Producer": {
+        "Name": "Unknown",
+        "URL": "Unknown"
+      }
+    },
+    "Client": {
+      "Type": "Browser",
+      "Name": "Opera",
+      "Version": "107.0.0.0",
+      "Engine": "Blink",
+      "EngineVersion": "107.0.0.0"
+    },
+    "OS": {
+      "Name": "Windows",
+      "Version": "10",
+      "Platform": "x64"
+    },
+    "Device": {
+      "Type": "Desktop",
+      "Brand": "Unknown",
+      "Model": "Unknown"
+    }
+  },
+  "safari-ios": {
+    "UserAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1",
+    "Bot": {
+      "IsBot": false,
+      "Name": "Unknown",
+      "Category": "Unknown",
+      "URL": "Unknown",
+      "Producer": {
+        "Name": "Unknown",
+        "URL": "Unknown"
+      }
+    },
+    "Client": {
+      "Type": "Browser",
+      "Name": "Safari",
+      "Version": "17.3",
+      "Engine": "WebKit",
+      "EngineVersion": "605.1.15"
+    },
+    "OS": {
+      "Name": "iOS",
+      "Version": "17.3.1",
+      "Platform": "ARM"
+    },
+    "Device": {
+      "Type": "Smartphone",
+      "Brand": "Apple",
+      "Model": "iPhone"
+    }
+  }
+}
