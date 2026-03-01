@@ -1,1 +1,24 @@
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+.coverprofile
+
+# Local build/output directories
+bin/
+dist/
+
+# Cache and temp files
 .cache/
+tmp/
+
+# Local editor/OS metadata
+.idea/
+.vscode/
+.DS_Store
+*.swp
