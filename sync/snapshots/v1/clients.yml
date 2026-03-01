@@ -1,0 +1,4 @@
+# Minimal pinned seed data used by ddsync for deterministic artifact generation.
+client:
+  name: Firefox
+  regex: "Firefox/[0-9]+"

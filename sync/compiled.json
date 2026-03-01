@@ -1,0 +1,15 @@
+{
+  "snapshot_version": "v1",
+  "files": [
+    {
+      "path": "bots.yml",
+      "sha256": "6a41f8ffae39e2a92cea1a71fac00c98d8751c78a7e5132f9ecd82547bfb67c3",
+      "content": "# Minimal pinned seed data used by ddsync for deterministic artifact generation.\nbot:\n  name: Googlebot\n  regex: \"Googlebot\"\n"
+    },
+    {
+      "path": "clients.yml",
+      "sha256": "a6bdbb999d6d326fd27006974b44d2139b8ad0b3d12fd5b1b77bb312e72fe337",
+      "content": "# Minimal pinned seed data used by ddsync for deterministic artifact generation.\nclient:\n  name: Firefox\n  regex: \"Firefox/[0-9]+\"\n"
+    }
+  ]
+}

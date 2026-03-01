@@ -1,0 +1,18 @@
+{
+  "snapshot_version": "v1",
+  "source_dir": "sync/snapshots/v1",
+  "source_files": [
+    {
+      "path": "bots.yml",
+      "sha256": "6a41f8ffae39e2a92cea1a71fac00c98d8751c78a7e5132f9ecd82547bfb67c3",
+      "size": 125
+    },
+    {
+      "path": "clients.yml",
+      "sha256": "a6bdbb999d6d326fd27006974b44d2139b8ad0b3d12fd5b1b77bb312e72fe337",
+      "size": 131
+    }
+  ],
+  "output_path": "sync/compiled.json",
+  "output_sha256": "8399790cd082ee1d3e896d41c68be0b664fc516ccdaa5f68c355299e35364d5a"
+}

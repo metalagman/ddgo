@@ -1,0 +1,4 @@
+# Minimal pinned seed data used by ddsync for deterministic artifact generation.
+bot:
+  name: Googlebot
+  regex: "Googlebot"
