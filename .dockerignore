@@ -1,0 +1,14 @@
+.git
+.gitignore
+.beads
+.cache
+*.test
+*.out
+coverage.out
+
+# Local/dev metadata
+.idea
+.vscode
+
+# Keep the Docker build context small
+**/*_test.go

@@ -1,0 +1,13 @@
+# Generated artifacts
+sync/compiled.json
+sync/manifest.json
+
+# Build/test cache
+.cache/
+
+# VCS internals
+.git/
+
+# IDE/editor metadata
+.idea/
+.vscode/

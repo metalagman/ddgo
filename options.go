@@ -9,7 +9,7 @@ type options struct {
 	resultCacheSize int
 }
 
-// Option configures detector behavior.
+// Option configures Detector behavior.
 type Option func(*options)
 
 func defaultOptions() options {
@@ -31,7 +31,10 @@ func WithMaxUserAgentLen(max int) Option {
 	}
 }
 
-// WithUserAgentTrimming toggles trimming of leading/trailing whitespace.
+// WithUserAgentTrimming toggles normalization of user-agent whitespace.
+//
+// When enabled, Parse collapses repeated whitespace and trims leading/trailing
+// space before matching.
 func WithUserAgentTrimming(enabled bool) Option {
 	return func(cfg *options) {
 		cfg.trimWhitespace = enabled

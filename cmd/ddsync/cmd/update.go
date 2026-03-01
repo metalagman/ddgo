@@ -1,0 +1,30 @@
+package ddcmd
+
+import (
+	"fmt"
+
+	"github.com/metalagman/ddgo/internal/ddsync"
+	"github.com/spf13/cobra"
+)
+
+func newUpdateCommand(opts *rootOptions) *cobra.Command {
+	return &cobra.Command{
+		Use:   "update",
+		Short: "Compile pinned snapshots into deterministic artifacts",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			manifest, err := ddsync.Update(opts.config())
+			if err != nil {
+				return err
+			}
+			payload := updateResult{
+				Operation:       "update",
+				SnapshotVersion: manifest.SnapshotVersion,
+				SourceFiles:     len(manifest.SourceFiles),
+				OutputPath:      manifest.OutputPath,
+				ManifestPath:    opts.config().ManifestPath,
+			}
+			text := fmt.Sprintf("updated snapshot %s with %d files", manifest.SnapshotVersion, len(manifest.SourceFiles))
+			return writeOutput(cmd, opts.jsonOutput, payload, text)
+		},
+	}
+}

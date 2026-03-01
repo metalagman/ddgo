@@ -1,9 +1,10 @@
 package ddgo
 
 // Unknown is a sentinel value used when parser data is not available.
+// Callers can compare string fields to this value instead of empty string.
 const Unknown = "Unknown"
 
-// Result is the aggregate detection output returned by Parse.
+// Result is the aggregate detection output returned by Parse variants.
 type Result struct {
 	UserAgent string
 	Bot       Bot

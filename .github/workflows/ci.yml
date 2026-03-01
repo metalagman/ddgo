@@ -18,20 +18,34 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Module tidy check
+        shell: bash
+        run: |
+          set -euo pipefail
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: Module verify
+        run: go mod verify
+
       - name: Unit tests
         run: go test ./...
+
+      - name: Example tests
+        run: go test ./... -run '^Example'
 
       - name: Race tests
         run: go test -race ./...
 
       - name: Sync artifact verification
-        run: go run ./cmd/ddsync verify --version v1
+        run: go run ./cmd/ddsync verify --version v1 --json
 
       - name: Compliance checks
         shell: bash
         run: |
           set -euo pipefail
 
+          test -f LICENSE
           test -f THIRD_PARTY_NOTICES.md
           test -f licenses/LGPL-3.0-or-later.txt
           test -f compliance/provenance.json

@@ -2,7 +2,9 @@ package ddgo
 
 import "strings"
 
-// Detector is the entry point for user-agent parsing.
+// Detector parses user-agent strings into structured detection results.
+//
+// A Detector is safe for concurrent use by multiple goroutines.
 type Detector struct {
 	opts  options
 	cache *resultCache
@@ -24,16 +26,26 @@ func New(opts ...Option) *Detector {
 }
 
 // Parse analyzes a user-agent string and returns a detection result.
+//
+// Parse can return cached results for identical normalized user-agent inputs.
+// If d is nil, Parse behaves as if called on New().
 func (d *Detector) Parse(userAgent string) Result {
 	return d.parse(userAgent, ClientHints{}, true)
 }
 
-// ParseWithClientHints analyzes a user-agent string with optional client hints.
+// ParseWithClientHints analyzes a user-agent string with explicit client hints.
+//
+// Hint-based parsing bypasses the internal Parse cache. If d is nil,
+// ParseWithClientHints behaves as if called on New().
 func (d *Detector) ParseWithClientHints(userAgent string, hints ClientHints) Result {
 	return d.parse(userAgent, hints, false)
 }
 
 // ParseWithHeaders analyzes a user-agent string and Sec-CH-UA style headers.
+//
+// This helper normalizes headers via ParseClientHintsFromHeaders and then
+// delegates to ParseWithClientHints. If d is nil, ParseWithHeaders behaves as
+// if called on New().
 func (d *Detector) ParseWithHeaders(userAgent string, headers map[string]string) Result {
 	return d.parse(userAgent, ParseClientHintsFromHeaders(headers), false)
 }

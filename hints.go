@@ -7,13 +7,15 @@ import (
 
 var reClientHintBrand = regexp.MustCompile(`"([^"]+)"\s*;\s*v="([^"]+)"`)
 
-// ClientHintBrand represents one structured entry from Sec-CH-UA.
+// ClientHintBrand represents one structured brand entry from Sec-CH-UA.
 type ClientHintBrand struct {
 	Name    string
 	Version string
 }
 
 // ClientHints contains normalized Sec-CH-UA style client hints.
+//
+// Mobile is nil when the client did not send Sec-CH-UA-Mobile.
 type ClientHints struct {
 	Brands          []ClientHintBrand
 	Platform        string
@@ -22,7 +24,8 @@ type ClientHints struct {
 	Mobile          *bool
 }
 
-// ParseClientHintsFromHeaders extracts client hints from HTTP header values.
+// ParseClientHintsFromHeaders extracts known client hints from HTTP header
+// values. Header name matching is case-insensitive.
 func ParseClientHintsFromHeaders(headers map[string]string) ClientHints {
 	if len(headers) == 0 {
 		return ClientHints{}
