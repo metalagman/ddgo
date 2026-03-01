@@ -167,3 +167,124 @@ func TestParseCurl(t *testing.T) {
 		t.Fatalf("unexpected curl client %+v", result.Client)
 	}
 }
+
+func TestParseEdgeAndroidAlias(t *testing.T) {
+	t.Parallel()
+
+	ua := "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36 EdgA/122.0.2365.66"
+	result := New().Parse(ua)
+
+	if result.Client.Name != "Microsoft Edge" {
+		t.Fatalf("unexpected client name %q", result.Client.Name)
+	}
+	if result.Client.Version != "122.0.2365.66" {
+		t.Fatalf("unexpected client version %q", result.Client.Version)
+	}
+	if result.Client.Engine != "Blink" {
+		t.Fatalf("unexpected engine %q", result.Client.Engine)
+	}
+}
+
+func TestParseChromeIOSAlias(t *testing.T) {
+	t.Parallel()
+
+	ua := "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/122.0.6261.69 Mobile/15E148 Safari/604.1"
+	result := New().Parse(ua)
+
+	if result.Client.Name != "Chrome" {
+		t.Fatalf("unexpected client name %q", result.Client.Name)
+	}
+	if result.Client.Version != "122.0.6261.69" {
+		t.Fatalf("unexpected client version %q", result.Client.Version)
+	}
+	if result.Client.Engine != "WebKit" {
+		t.Fatalf("unexpected engine %q", result.Client.Engine)
+	}
+}
+
+func TestParseWithClientHints(t *testing.T) {
+	t.Parallel()
+
+	hints := ClientHints{
+		Brands: []ClientHintBrand{
+			{Name: "Not A;Brand", Version: "24"},
+			{Name: "Chromium", Version: "122.0.6261.128"},
+			{Name: "Google Chrome", Version: "122.0.6261.128"},
+		},
+		Platform:        "Android",
+		PlatformVersion: "14.0.0",
+		Model:           "SM-G991B",
+		Mobile:          boolPtr(true),
+	}
+
+	result := New().ParseWithClientHints("Mozilla/5.0", hints)
+	if result.Client.Name != "Chrome" || result.Client.Version != "122.0.6261.128" {
+		t.Fatalf("unexpected client %+v", result.Client)
+	}
+	if result.OS.Name != "Android" || result.OS.Version != "14" || result.OS.Platform != "ARM" {
+		t.Fatalf("unexpected os %+v", result.OS)
+	}
+	if result.Device.Type != "Smartphone" || result.Device.Brand != "Samsung" || result.Device.Model != "SM-G991B" {
+		t.Fatalf("unexpected device %+v", result.Device)
+	}
+}
+
+func TestParseWithHeaders(t *testing.T) {
+	t.Parallel()
+
+	headers := map[string]string{
+		"Sec-CH-UA":                  "\"Not(A:Brand\";v=\"99\", \"Microsoft Edge\";v=\"123.0.0.0\", \"Chromium\";v=\"123.0.0.0\"",
+		"Sec-CH-UA-Platform":         "\"Windows\"",
+		"Sec-CH-UA-Platform-Version": "\"15.0.0\"",
+		"Sec-CH-UA-Mobile":           "?0",
+	}
+	result := New().ParseWithHeaders("Mozilla/5.0", headers)
+	if result.Client.Name != "Microsoft Edge" || result.Client.Version != "123.0.0.0" {
+		t.Fatalf("unexpected client %+v", result.Client)
+	}
+	if result.OS.Name != "Windows" || result.OS.Version != "15" || result.OS.Platform != "x64" {
+		t.Fatalf("unexpected os %+v", result.OS)
+	}
+	if result.Device.Type != "Desktop" {
+		t.Fatalf("unexpected device type %q", result.Device.Type)
+	}
+}
+
+func TestParseWithClientHintsBotPrecedence(t *testing.T) {
+	t.Parallel()
+
+	hints := ClientHints{
+		Brands: []ClientHintBrand{
+			{Name: "Google Chrome", Version: "122.0.6261.128"},
+		},
+		Platform: "Android",
+		Mobile:   boolPtr(true),
+	}
+	result := New().ParseWithClientHints("Googlebot/2.1", hints)
+	if !result.Bot.IsBot {
+		t.Fatal("expected bot detection")
+	}
+	if result.Client.Name != Unknown {
+		t.Fatalf("expected unknown client for bot, got %q", result.Client.Name)
+	}
+	if result.Device.Type != "Bot" {
+		t.Fatalf("expected bot device, got %q", result.Device.Type)
+	}
+}
+
+func TestParseNormalizesWhitespace(t *testing.T) {
+	t.Parallel()
+
+	ua := "\t Mozilla/5.0 \n (Windows NT 10.0; Win64; x64; rv:124.0)\r\nGecko/20100101 Firefox/124.0 \t"
+	result := New().Parse(ua)
+	if result.UserAgent != "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0" {
+		t.Fatalf("unexpected normalized user agent %q", result.UserAgent)
+	}
+	if result.Client.Name != "Firefox" {
+		t.Fatalf("unexpected client name %q", result.Client.Name)
+	}
+}
+
+func boolPtr(v bool) *bool {
+	return &v
+}

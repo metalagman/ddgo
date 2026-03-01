@@ -11,14 +11,18 @@ var (
 	reBotDuckDuckBot = regexp.MustCompile(`(?i)\bDuckDuckBot(?:/([0-9.]+))?\b`)
 	reBotAny         = regexp.MustCompile(`(?i)\b(bot|crawler|spider)\b`)
 
-	reClientEdge    = regexp.MustCompile(`\bEdg/([0-9.]+)\b`)
-	reClientFirefox = regexp.MustCompile(`\bFirefox/([0-9.]+)\b`)
-	reClientChrome  = regexp.MustCompile(`\bChrome/([0-9.]+)\b`)
-	reClientSafari  = regexp.MustCompile(`\bVersion/([0-9.]+).*?\bSafari/`)
-	reClientCurl    = regexp.MustCompile(`\bcurl/([0-9.]+)\b`)
-	reClientGoHTTP  = regexp.MustCompile(`\bGo-http-client/([0-9.]+)\b`)
-	reWebKit        = regexp.MustCompile(`\bAppleWebKit/([0-9.]+)\b`)
-	reGeckoRV       = regexp.MustCompile(`\brv:([0-9.]+)\b`)
+	reClientEdge      = regexp.MustCompile(`\bEdg/([0-9.]+)\b`)
+	reClientEdgeAlt   = regexp.MustCompile(`\b(?:EdgA|EdgiOS)/([0-9.]+)\b`)
+	reClientOpera     = regexp.MustCompile(`\bOPR/([0-9.]+)\b`)
+	reClientFirefox   = regexp.MustCompile(`\bFirefox/([0-9.]+)\b`)
+	reClientFirefoxOS = regexp.MustCompile(`\bFxiOS/([0-9.]+)\b`)
+	reClientChrome    = regexp.MustCompile(`\bChrome/([0-9.]+)\b`)
+	reClientChromeOS  = regexp.MustCompile(`\bCriOS/([0-9.]+)\b`)
+	reClientSafari    = regexp.MustCompile(`\bVersion/([0-9.]+).*?\bSafari/`)
+	reClientCurl      = regexp.MustCompile(`\bcurl/([0-9.]+)\b`)
+	reClientGoHTTP    = regexp.MustCompile(`\bGo-http-client/([0-9.]+)\b`)
+	reWebKit          = regexp.MustCompile(`\bAppleWebKit/([0-9.]+)\b`)
+	reGeckoRV         = regexp.MustCompile(`\brv:([0-9.]+)\b`)
 
 	reOSWindows = regexp.MustCompile(`\bWindows NT ([0-9.]+)\b`)
 	reOSAndroid = regexp.MustCompile(`\bAndroid ([0-9.]+)\b`)
@@ -103,6 +107,39 @@ func parseClient(ua string, isBot bool) Client {
 			EngineVersion: matches[1],
 		}
 	}
+	if matches := reClientEdgeAlt.FindStringSubmatch(ua); len(matches) > 1 {
+		engine := "Blink"
+		engineVersion := matches[1]
+		if strings.Contains(ua, "EdgiOS/") {
+			engine = "WebKit"
+			engineVersion = firstMatch(reWebKit, ua, matches[1])
+		}
+		return Client{
+			Type:          "Browser",
+			Name:          "Microsoft Edge",
+			Version:       matches[1],
+			Engine:        engine,
+			EngineVersion: engineVersion,
+		}
+	}
+	if matches := reClientOpera.FindStringSubmatch(ua); len(matches) > 1 {
+		return Client{
+			Type:          "Browser",
+			Name:          "Opera",
+			Version:       matches[1],
+			Engine:        "Blink",
+			EngineVersion: matches[1],
+		}
+	}
+	if matches := reClientFirefoxOS.FindStringSubmatch(ua); len(matches) > 1 {
+		return Client{
+			Type:          "Browser",
+			Name:          "Firefox",
+			Version:       matches[1],
+			Engine:        "WebKit",
+			EngineVersion: firstMatch(reWebKit, ua, matches[1]),
+		}
+	}
 	if matches := reClientFirefox.FindStringSubmatch(ua); len(matches) > 1 {
 		return Client{
 			Type:          "Browser",
@@ -110,6 +147,15 @@ func parseClient(ua string, isBot bool) Client {
 			Version:       matches[1],
 			Engine:        "Gecko",
 			EngineVersion: firstMatch(reGeckoRV, ua, matches[1]),
+		}
+	}
+	if matches := reClientChromeOS.FindStringSubmatch(ua); len(matches) > 1 {
+		return Client{
+			Type:          "Browser",
+			Name:          "Chrome",
+			Version:       matches[1],
+			Engine:        "WebKit",
+			EngineVersion: firstMatch(reWebKit, ua, matches[1]),
 		}
 	}
 	if matches := reClientChrome.FindStringSubmatch(ua); len(matches) > 1 {
