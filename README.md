@@ -1,5 +1,12 @@
 # ddgo
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/metalagman/ddgo)](https://goreportcard.com/report/github.com/metalagman/ddgo)
+[![Go Reference](https://pkg.go.dev/badge/github.com/metalagman/ddgo.svg)](https://pkg.go.dev/github.com/metalagman/ddgo)
+[![lint](https://github.com/metalagman/ddgo/actions/workflows/lint.yml/badge.svg)](https://github.com/metalagman/ddgo/actions/workflows/lint.yml)
+[![ci](https://github.com/metalagman/ddgo/actions/workflows/ci.yml/badge.svg)](https://github.com/metalagman/ddgo/actions/workflows/ci.yml)
+[![version](https://img.shields.io/github/v/release/metalagman/ddgo?sort=semver)](https://github.com/metalagman/ddgo/releases)
+[![license](https://img.shields.io/github/license/metalagman/ddgo)](LICENSE)
+
 `ddgo` is a Go port of Matomo Device Detector with deterministic snapshot syncing and third-party provenance tracking.
 
 ## Library usage
