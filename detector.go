@@ -35,33 +35,13 @@ func (d *Detector) Parse(userAgent string) Result {
 		ua = ua[:d.opts.maxUserAgentLen]
 	}
 
+	bot := parseBot(ua)
+
 	return Result{
 		UserAgent: ua,
-		Bot: Bot{
-			Name:     Unknown,
-			Category: Unknown,
-			URL:      Unknown,
-			Producer: Producer{
-				Name: Unknown,
-				URL:  Unknown,
-			},
-		},
-		Client: Client{
-			Type:          Unknown,
-			Name:          Unknown,
-			Version:       Unknown,
-			Engine:        Unknown,
-			EngineVersion: Unknown,
-		},
-		OS: OS{
-			Name:     Unknown,
-			Version:  Unknown,
-			Platform: Unknown,
-		},
-		Device: Device{
-			Type:  Unknown,
-			Brand: Unknown,
-			Model: Unknown,
-		},
+		Bot:       bot,
+		Client:    parseClient(ua, bot.IsBot),
+		OS:        parseOS(ua),
+		Device:    parseDevice(ua, bot.IsBot),
 	}
 }
