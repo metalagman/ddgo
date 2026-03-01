@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Unit tests
+        run: go test ./...
+
+      - name: Race tests
+        run: go test -race ./...
+
+      - name: Sync artifact verification
+        run: go run ./cmd/ddsync verify --version v1
+
+      - name: Compliance checks
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f THIRD_PARTY_NOTICES.md
+          test -f licenses/LGPL-3.0-or-later.txt
+          test -f compliance/provenance.json
+
+          grep -q '"license": "LGPL-3.0-or-later"' compliance/provenance.json
+
+          compiled_sha=$(sha256sum sync/compiled.json | awk '{print $1}')
+          manifest_sha=$(sha256sum sync/manifest.json | awk '{print $1}')
+
+          grep -q "\"sha256\": \"${compiled_sha}\"" compliance/provenance.json
+          grep -q "\"manifest_sha256\": \"${manifest_sha}\"" compliance/provenance.json
