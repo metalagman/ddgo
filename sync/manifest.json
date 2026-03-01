@@ -1,8 +1,7 @@
 {
-  "snapshot_version": "v1",
   "upstream_repo": "matomo-org/device-detector",
   "upstream_version": "v6.0.0",
-  "source_dir": "sync/snapshots/v1",
+  "source_dir": "sync/current",
   "source_files": [
     {
       "path": "bots.yml",
@@ -16,5 +15,5 @@
     }
   ],
   "output_path": "sync/compiled.json",
-  "output_sha256": "8399790cd082ee1d3e896d41c68be0b664fc516ccdaa5f68c355299e35364d5a"
+  "output_sha256": "5a912dc2ca74599e96753382c97b0814c580de7cd8a4cf48212a5644632c3936"
 }

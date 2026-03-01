@@ -3,11 +3,14 @@ package ddcmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+const testResolvedUpstreamVersion = "v6.0.0"
 
 func TestUpdateVerifyStatusText(t *testing.T) {
 	t.Parallel()
@@ -20,13 +23,11 @@ func TestUpdateVerifyStatusText(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
-		"--upstream-version", "v6.0.0",
 	)
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
 	}
-	if !strings.Contains(out, "updated snapshot v-test") {
+	if !strings.Contains(out, "updated snapshot (matomo-org/device-detector@"+testResolvedUpstreamVersion+")") {
 		t.Fatalf("unexpected update output: %q", out)
 	}
 
@@ -36,8 +37,6 @@ func TestUpdateVerifyStatusText(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
-		"--upstream-version", "v6.0.0",
 	)
 	if err != nil {
 		t.Fatalf("verify failed: %v", err)
@@ -52,8 +51,6 @@ func TestUpdateVerifyStatusText(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
-		"--upstream-version", "v6.0.0",
 	)
 	if err != nil {
 		t.Fatalf("status failed: %v", err)
@@ -73,8 +70,6 @@ func TestStatusJSONDirty(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
-		"--upstream-version", "v6.0.0",
 	)
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
@@ -90,8 +85,6 @@ func TestStatusJSONDirty(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
-		"--upstream-version", "v6.0.0",
 		"--json",
 	)
 	if err != nil {
@@ -120,8 +113,6 @@ func TestVerifyJSONError(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
-		"--upstream-version", "v6.0.0",
 	)
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
@@ -137,8 +128,6 @@ func TestVerifyJSONError(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
-		"--upstream-version", "v6.0.0",
 		"--json",
 	)
 	if err == nil {
@@ -164,8 +153,6 @@ func TestVerifyDetectsProvenanceMismatch(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
-		"--upstream-version", "v6.0.0",
 	)
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
@@ -175,7 +162,7 @@ func TestVerifyDetectsProvenanceMismatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read provenance: %v", err)
 	}
-	mutated := strings.Replace(string(raw), "v6.0.0", "v6.0.1", 1)
+	mutated := strings.Replace(string(raw), testResolvedUpstreamVersion, "v6.0.1", 1)
 	if err := os.WriteFile(provenancePath, []byte(mutated), 0o644); err != nil {
 		t.Fatalf("write provenance: %v", err)
 	}
@@ -186,8 +173,6 @@ func TestVerifyDetectsProvenanceMismatch(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
-		"--upstream-version", "v6.0.0",
 		"--json",
 	)
 	if err == nil {
@@ -198,7 +183,28 @@ func TestVerifyDetectsProvenanceMismatch(t *testing.T) {
 	}
 }
 
-func TestUpdateRequiresUpstreamVersion(t *testing.T) {
+func TestUpdateFailsWhenResolverFails(t *testing.T) {
+	t.Parallel()
+
+	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
+	_, _, err := execCommandWithResolver(t, func(string) (string, error) {
+		return "", fmt.Errorf("resolver failed")
+	},
+		"update",
+		"--snapshot-dir", snapshotDir,
+		"--output", outputPath,
+		"--manifest", manifestPath,
+		"--provenance", provenancePath,
+	)
+	if err == nil {
+		t.Fatal("expected error when upstream resolver fails")
+	}
+	if !strings.Contains(err.Error(), "resolver failed") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestUpdateRequiresUpstreamRepo(t *testing.T) {
 	t.Parallel()
 
 	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
@@ -208,33 +214,33 @@ func TestUpdateRequiresUpstreamVersion(t *testing.T) {
 		"--output", outputPath,
 		"--manifest", manifestPath,
 		"--provenance", provenancePath,
-		"--version", "v-test",
+		"--upstream-repo", "",
 	)
 	if err == nil {
-		t.Fatal("expected error when upstream version is missing")
+		t.Fatal("expected error when upstream repo is empty")
 	}
-	if !strings.Contains(err.Error(), "--upstream-version is required") {
+	if !strings.Contains(err.Error(), "--upstream-repo must not be empty") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
-func TestVerifyRequiresUpstreamVersion(t *testing.T) {
+func TestRemovedVersionFlagsRejected(t *testing.T) {
 	t.Parallel()
 
-	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
-	_, _, err := execCommand(t,
-		"verify",
-		"--snapshot-dir", snapshotDir,
-		"--output", outputPath,
-		"--manifest", manifestPath,
-		"--provenance", provenancePath,
-		"--version", "v-test",
-	)
+	_, _, err := execCommand(t, "status", "--version", "v1")
 	if err == nil {
-		t.Fatal("expected error when upstream version is missing")
+		t.Fatal("expected --version to be rejected")
 	}
-	if !strings.Contains(err.Error(), "--upstream-version is required") {
-		t.Fatalf("unexpected error: %v", err)
+	if !strings.Contains(err.Error(), "unknown flag: --version") {
+		t.Fatalf("unexpected error for --version: %v", err)
+	}
+
+	_, _, err = execCommand(t, "status", "--upstream-version", "v6.0.0")
+	if err == nil {
+		t.Fatal("expected --upstream-version to be rejected")
+	}
+	if !strings.Contains(err.Error(), "unknown flag: --upstream-version") {
+		t.Fatalf("unexpected error for --upstream-version: %v", err)
 	}
 }
 
@@ -280,10 +286,17 @@ func TestUnknownCommand(t *testing.T) {
 
 func execCommand(t *testing.T, args ...string) (string, string, error) {
 	t.Helper()
+	return execCommandWithResolver(t, func(string) (string, error) {
+		return testResolvedUpstreamVersion, nil
+	}, args...)
+}
+
+func execCommandWithResolver(t *testing.T, resolver func(string) (string, error), args ...string) (string, string, error) {
+	t.Helper()
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
-	root := NewRootCommand(&out, &stderr)
+	root := newRootCommandWithResolver(&out, &stderr, resolver)
 	root.SetArgs(args)
 	_, err := root.ExecuteC()
 	return out.String(), stderr.String(), err

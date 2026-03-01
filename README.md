@@ -24,9 +24,9 @@ Runnable examples are in [`example_test.go`](example_test.go).
 `ddsync` manages deterministic artifacts from pinned snapshots.
 
 ```bash
-go run ./cmd/ddsync update --version v1 --upstream-version <matomo-tag-or-commit>
-go run ./cmd/ddsync verify --version v1 --upstream-version <matomo-tag-or-commit>
-go run ./cmd/ddsync status --version v1 --upstream-version <matomo-tag-or-commit>
+go run ./cmd/ddsync update
+go run ./cmd/ddsync verify
+go run ./cmd/ddsync status
 ```
 
 Additional commands:
@@ -40,9 +40,8 @@ Machine-readable output is available with `--json`.
 
 Version semantics:
 
-- `--version`: internal snapshot/artifact version used by this repository (for example `v1`).
-- `--upstream-version`: required upstream source reference from `matomo-org/device-detector` (tag or commit).
-- `--upstream-repo`: upstream repository slug (defaults to `matomo-org/device-detector`).
+- `ddsync` resolves the latest stable semver tag from `--upstream-repo` (defaults to `matomo-org/device-detector`) using git tags.
+- If upstream tags cannot be resolved, `ddsync` fails fast.
 
 ## Development checks
 
@@ -54,12 +53,12 @@ go test ./... -run '^Example'
 go test -race ./...
 go mod tidy && git diff --exit-code go.mod go.sum
 go mod verify
-go run ./cmd/ddsync verify --version v1 --upstream-version <matomo-tag-or-commit> --json
+go run ./cmd/ddsync verify --json
 ```
 
 ## Snapshot artifacts
 
-Pinned source snapshot directory: `sync/snapshots/v1/`
+Pinned source snapshot directory: `sync/current/`
 
 Generated artifacts:
 

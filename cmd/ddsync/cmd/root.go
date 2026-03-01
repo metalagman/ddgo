@@ -1,6 +1,7 @@
 package ddcmd
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -10,11 +11,10 @@ import (
 )
 
 const (
-	defaultSnapshotDir  = "sync/snapshots/v1"
+	defaultSnapshotDir  = "sync/current"
 	defaultOutputPath   = "sync/compiled.json"
 	defaultManifest     = "sync/manifest.json"
 	defaultProvenance   = "compliance/provenance.json"
-	defaultVersion      = "v1"
 	defaultUpstreamRepo = "matomo-org/device-detector"
 )
 
@@ -22,14 +22,13 @@ const (
 var BuildVersion = "dev"
 
 type rootOptions struct {
-	snapshotDir     string
-	outputPath      string
-	manifest        string
-	provenancePath  string
-	version         string
-	upstreamRepo    string
-	upstreamVersion string
-	jsonOutput      bool
+	snapshotDir        string
+	outputPath         string
+	manifest           string
+	provenancePath     string
+	upstreamRepo       string
+	jsonOutput         bool
+	resolveUpstreamTag func(string) (string, error)
 }
 
 // Execute runs the ddsync root command with process stdio.
@@ -39,7 +38,13 @@ func Execute() error {
 
 // NewRootCommand creates the Cobra root command with subcommands.
 func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
+	return newRootCommandWithResolver(stdout, stderr, ddsync.ResolveLatestStableTag)
+}
+
+func newRootCommandWithResolver(stdout, stderr io.Writer, resolver func(string) (string, error)) *cobra.Command {
 	opts := &rootOptions{}
+	opts.resolveUpstreamTag = resolver
+
 	cmd := &cobra.Command{
 		Use:           "ddsync",
 		Short:         "Manage deterministic snapshot artifacts",
@@ -56,9 +61,7 @@ func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
 	flags.StringVar(&opts.outputPath, "output", defaultOutputPath, "Path to generated deterministic artifact")
 	flags.StringVar(&opts.manifest, "manifest", defaultManifest, "Path to generated manifest")
 	flags.StringVar(&opts.provenancePath, "provenance", defaultProvenance, "Path to compliance provenance metadata")
-	flags.StringVar(&opts.version, "version", defaultVersion, "Internal artifact/snapshot version")
 	flags.StringVar(&opts.upstreamRepo, "upstream-repo", defaultUpstreamRepo, "Upstream repository slug for source data")
-	flags.StringVar(&opts.upstreamVersion, "upstream-version", "", "Required upstream source tag/commit for pinned snapshot data")
 	flags.BoolVar(&opts.jsonOutput, "json", false, "Emit structured JSON output")
 
 	cmd.AddCommand(
@@ -72,13 +75,24 @@ func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func (o *rootOptions) config() ddsync.Config {
-	return ddsync.Config{
-		Version:         strings.TrimSpace(o.version),
-		UpstreamRepo:    strings.TrimSpace(o.upstreamRepo),
-		UpstreamVersion: strings.TrimSpace(o.upstreamVersion),
-		SnapshotDir:     strings.TrimSpace(o.snapshotDir),
-		OutputPath:      strings.TrimSpace(o.outputPath),
-		ManifestPath:    strings.TrimSpace(o.manifest),
+func (o *rootOptions) config() (ddsync.Config, error) {
+	cfg := ddsync.Config{
+		UpstreamRepo: strings.TrimSpace(o.upstreamRepo),
+		SnapshotDir:  strings.TrimSpace(o.snapshotDir),
+		OutputPath:   strings.TrimSpace(o.outputPath),
+		ManifestPath: strings.TrimSpace(o.manifest),
 	}
+	if cfg.UpstreamRepo == "" {
+		return ddsync.Config{}, fmt.Errorf("--upstream-repo must not be empty")
+	}
+	if o.resolveUpstreamTag == nil {
+		return ddsync.Config{}, fmt.Errorf("upstream resolver is not configured")
+	}
+
+	upstreamVersion, err := o.resolveUpstreamTag(cfg.UpstreamRepo)
+	if err != nil {
+		return ddsync.Config{}, fmt.Errorf("resolve latest upstream version for %q: %w", cfg.UpstreamRepo, err)
+	}
+	cfg.UpstreamVersion = strings.TrimSpace(upstreamVersion)
+	return cfg, nil
 }

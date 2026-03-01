@@ -204,7 +204,6 @@ func testConfig(t *testing.T) Config {
 	}
 
 	return Config{
-		Version:         "v-test",
 		UpstreamRepo:    "matomo-org/device-detector",
 		UpstreamVersion: "v6.0.0",
 		SnapshotDir:     snapshotDir,

@@ -14,11 +14,11 @@ func newVerifyCommand(opts *rootOptions) *cobra.Command {
 		Use:   "verify",
 		Short: "Verify snapshots and generated artifact against manifest",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := requireUpstreamVersion(opts); err != nil {
+			cfg, err := opts.config()
+			if err != nil {
 				return err
 			}
 
-			cfg := opts.config()
 			report, err := ddsync.Status(cfg)
 			if err != nil {
 				return err

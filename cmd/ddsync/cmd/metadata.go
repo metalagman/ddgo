@@ -12,10 +12,9 @@ import (
 )
 
 type provenance struct {
-	SchemaVersion            int                  `json:"schema_version"`
-	GeneratedArtifactVersion string               `json:"generated_artifact_version"`
-	Sources                  []provenanceSource   `json:"sources"`
-	Artifacts                []provenanceArtifact `json:"artifacts"`
+	SchemaVersion int                  `json:"schema_version"`
+	Sources       []provenanceSource   `json:"sources"`
+	Artifacts     []provenanceArtifact `json:"artifacts"`
 }
 
 type provenanceSource struct {
@@ -34,16 +33,6 @@ type provenanceArtifact struct {
 	Generator    string `json:"generator"`
 }
 
-func requireUpstreamVersion(opts *rootOptions) error {
-	if opts.config().UpstreamVersion == "" {
-		return fmt.Errorf("--upstream-version is required")
-	}
-	if opts.config().UpstreamRepo == "" {
-		return fmt.Errorf("--upstream-repo must not be empty")
-	}
-	return nil
-}
-
 func updateProvenance(cfg ddsync.Config, provenancePath string) error {
 	outputSHA, err := fileSHA256(cfg.OutputPath)
 	if err != nil {
@@ -55,8 +44,7 @@ func updateProvenance(cfg ddsync.Config, provenancePath string) error {
 	}
 
 	p := provenance{
-		SchemaVersion:            1,
-		GeneratedArtifactVersion: cfg.Version,
+		SchemaVersion: 1,
 		Sources: []provenanceSource{
 			{
 				Name:            cfg.UpstreamRepo,
@@ -73,9 +61,7 @@ func updateProvenance(cfg ddsync.Config, provenancePath string) error {
 				ManifestPath: normalizePath(cfg.ManifestPath),
 				ManifestSHA:  manifestSHA,
 				Generator: fmt.Sprintf(
-					"go run ./cmd/ddsync update --version %s --upstream-version %s --upstream-repo %s",
-					cfg.Version,
-					cfg.UpstreamVersion,
+					"go run ./cmd/ddsync update --upstream-repo %s",
 					cfg.UpstreamRepo,
 				),
 			},
@@ -109,9 +95,6 @@ func provenanceIssues(cfg ddsync.Config, provenancePath string) ([]string, error
 	}
 
 	issues := make([]string, 0, 6)
-	if p.GeneratedArtifactVersion != cfg.Version {
-		issues = append(issues, fmt.Sprintf("provenance generated artifact version mismatch: want %q got %q", cfg.Version, p.GeneratedArtifactVersion))
-	}
 
 	var src *provenanceSource
 	for i := range p.Sources {

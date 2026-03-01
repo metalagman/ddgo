@@ -16,7 +16,6 @@ import (
 
 // Config controls input/output locations for the sync pipeline.
 type Config struct {
-	Version         string
 	UpstreamRepo    string
 	UpstreamVersion string
 	SnapshotDir     string
@@ -40,13 +39,11 @@ type CompiledFile struct {
 
 // CompiledSnapshot is the generated artifact consumed by parsers.
 type CompiledSnapshot struct {
-	SnapshotVersion string         `json:"snapshot_version"`
-	Files           []CompiledFile `json:"files"`
+	Files []CompiledFile `json:"files"`
 }
 
 // Manifest tracks source metadata and the expected output hash.
 type Manifest struct {
-	SnapshotVersion string       `json:"snapshot_version"`
 	UpstreamRepo    string       `json:"upstream_repo"`
 	UpstreamVersion string       `json:"upstream_version"`
 	SourceDir       string       `json:"source_dir"`
@@ -73,8 +70,7 @@ func Update(cfg Config) (Manifest, error) {
 	}
 
 	compiled := CompiledSnapshot{
-		SnapshotVersion: cfg.Version,
-		Files:           compiledFiles,
+		Files: compiledFiles,
 	}
 	compiledBytes, err := marshalStableJSON(compiled)
 	if err != nil {
@@ -85,7 +81,6 @@ func Update(cfg Config) (Manifest, error) {
 	}
 
 	manifest := Manifest{
-		SnapshotVersion: cfg.Version,
 		UpstreamRepo:    cfg.UpstreamRepo,
 		UpstreamVersion: cfg.UpstreamVersion,
 		SourceDir:       toSlash(filepath.Clean(cfg.SnapshotDir)),
@@ -137,9 +132,6 @@ func Status(cfg Config) (StatusReport, error) {
 	}
 
 	var issues []string
-	if cfg.Version != "" && manifest.SnapshotVersion != cfg.Version {
-		issues = append(issues, fmt.Sprintf("snapshot version mismatch: want %q got %q", cfg.Version, manifest.SnapshotVersion))
-	}
 	if cfg.UpstreamRepo != "" {
 		switch {
 		case manifest.UpstreamRepo == "":
@@ -180,9 +172,6 @@ func Status(cfg Config) (StatusReport, error) {
 }
 
 func validateConfig(cfg Config, requireUpstream bool) error {
-	if cfg.Version == "" {
-		return errors.New("version is required")
-	}
 	if requireUpstream && cfg.UpstreamVersion == "" {
 		return errors.New("upstream version is required")
 	}

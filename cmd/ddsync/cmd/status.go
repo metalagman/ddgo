@@ -12,21 +12,25 @@ func newStatusCommand(opts *rootOptions) *cobra.Command {
 		Use:   "status",
 		Short: "Report whether snapshots and artifact are in sync",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg := opts.config()
+			cfg, err := opts.config()
+			if err != nil {
+				return err
+			}
+
 			report, err := ddsync.Status(cfg)
 			if err != nil {
 				return err
 			}
-			if cfg.UpstreamVersion != "" {
-				issues, err := provenanceIssues(cfg, opts.provenancePath)
-				if err != nil {
-					report.Issues = append(report.Issues, fmt.Sprintf("provenance check failed: %v", err))
-				} else {
-					report.Issues = append(report.Issues, issues...)
-				}
-				report.Issues = normalizeIssues(report.Issues)
-				report.Clean = len(report.Issues) == 0
+
+			issues, err := provenanceIssues(cfg, opts.provenancePath)
+			if err != nil {
+				report.Issues = append(report.Issues, fmt.Sprintf("provenance check failed: %v", err))
+			} else {
+				report.Issues = append(report.Issues, issues...)
 			}
+			report.Issues = normalizeIssues(report.Issues)
+			report.Clean = len(report.Issues) == 0
+
 			return writeOutput(cmd, opts.jsonOutput, statusResult{
 				Operation: "status",
 				Clean:     report.Clean,

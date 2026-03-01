@@ -12,11 +12,11 @@ func newUpdateCommand(opts *rootOptions) *cobra.Command {
 		Use:   "update",
 		Short: "Compile pinned snapshots into deterministic artifacts",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := requireUpstreamVersion(opts); err != nil {
+			cfg, err := opts.config()
+			if err != nil {
 				return err
 			}
 
-			cfg := opts.config()
 			manifest, err := ddsync.Update(cfg)
 			if err != nil {
 				return err
@@ -26,7 +26,6 @@ func newUpdateCommand(opts *rootOptions) *cobra.Command {
 			}
 			payload := updateResult{
 				Operation:       "update",
-				SnapshotVersion: manifest.SnapshotVersion,
 				UpstreamRepo:    manifest.UpstreamRepo,
 				UpstreamVersion: manifest.UpstreamVersion,
 				SourceFiles:     len(manifest.SourceFiles),
@@ -34,8 +33,7 @@ func newUpdateCommand(opts *rootOptions) *cobra.Command {
 				ManifestPath:    cfg.ManifestPath,
 			}
 			text := fmt.Sprintf(
-				"updated snapshot %s (%s@%s) with %d files",
-				manifest.SnapshotVersion,
+				"updated snapshot (%s@%s) with %d files",
 				manifest.UpstreamRepo,
 				manifest.UpstreamVersion,
 				len(manifest.SourceFiles),

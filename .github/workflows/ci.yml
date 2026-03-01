@@ -43,12 +43,9 @@ jobs:
           set -euo pipefail
 
           upstream_repo=$(python3 -c 'import json;print(json.load(open("compliance/provenance.json"))["sources"][0]["name"])')
-          upstream_version=$(python3 -c 'import json;print(json.load(open("compliance/provenance.json"))["sources"][0]["upstream_version"])')
 
           go run ./cmd/ddsync verify \
-            --version v1 \
             --upstream-repo "${upstream_repo}" \
-            --upstream-version "${upstream_version}" \
             --json
 
       - name: Compliance checks
