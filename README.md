@@ -9,6 +9,8 @@
 
 `ddgo` is a Go port of Matomo Device Detector with deterministic snapshot syncing and third-party provenance tracking.
 
+Go docs: <https://pkg.go.dev/github.com/metalagman/ddgo>
+
 ## Library usage
 
 ```go
