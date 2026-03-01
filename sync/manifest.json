@@ -1,5 +1,7 @@
 {
   "snapshot_version": "v1",
+  "upstream_repo": "matomo-org/device-detector",
+  "upstream_version": "v6.0.0",
   "source_dir": "sync/snapshots/v1",
   "source_files": [
     {

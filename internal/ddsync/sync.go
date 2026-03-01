@@ -16,10 +16,12 @@ import (
 
 // Config controls input/output locations for the sync pipeline.
 type Config struct {
-	Version      string
-	SnapshotDir  string
-	OutputPath   string
-	ManifestPath string
+	Version         string
+	UpstreamRepo    string
+	UpstreamVersion string
+	SnapshotDir     string
+	OutputPath      string
+	ManifestPath    string
 }
 
 // SourceFile describes metadata about one input snapshot file.
@@ -45,6 +47,8 @@ type CompiledSnapshot struct {
 // Manifest tracks source metadata and the expected output hash.
 type Manifest struct {
 	SnapshotVersion string       `json:"snapshot_version"`
+	UpstreamRepo    string       `json:"upstream_repo"`
+	UpstreamVersion string       `json:"upstream_version"`
 	SourceDir       string       `json:"source_dir"`
 	SourceFiles     []SourceFile `json:"source_files"`
 	OutputPath      string       `json:"output_path"`
@@ -59,7 +63,7 @@ type StatusReport struct {
 
 // Update compiles snapshot inputs into deterministic output + manifest.
 func Update(cfg Config) (Manifest, error) {
-	if err := validateConfig(cfg); err != nil {
+	if err := validateConfig(cfg, true); err != nil {
 		return Manifest{}, err
 	}
 
@@ -82,6 +86,8 @@ func Update(cfg Config) (Manifest, error) {
 
 	manifest := Manifest{
 		SnapshotVersion: cfg.Version,
+		UpstreamRepo:    cfg.UpstreamRepo,
+		UpstreamVersion: cfg.UpstreamVersion,
 		SourceDir:       toSlash(filepath.Clean(cfg.SnapshotDir)),
 		SourceFiles:     sourceFiles,
 		OutputPath:      toSlash(filepath.Clean(cfg.OutputPath)),
@@ -100,6 +106,10 @@ func Update(cfg Config) (Manifest, error) {
 
 // Verify validates snapshot sources and output against the manifest.
 func Verify(cfg Config) error {
+	if err := validateConfig(cfg, true); err != nil {
+		return err
+	}
+
 	report, err := Status(cfg)
 	if err != nil {
 		return err
@@ -112,7 +122,7 @@ func Verify(cfg Config) error {
 
 // Status checks whether current files match manifest expectations.
 func Status(cfg Config) (StatusReport, error) {
-	if err := validateConfig(cfg); err != nil {
+	if err := validateConfig(cfg, false); err != nil {
 		return StatusReport{}, err
 	}
 
@@ -129,6 +139,22 @@ func Status(cfg Config) (StatusReport, error) {
 	var issues []string
 	if cfg.Version != "" && manifest.SnapshotVersion != cfg.Version {
 		issues = append(issues, fmt.Sprintf("snapshot version mismatch: want %q got %q", cfg.Version, manifest.SnapshotVersion))
+	}
+	if cfg.UpstreamRepo != "" {
+		switch {
+		case manifest.UpstreamRepo == "":
+			issues = append(issues, "manifest missing upstream repo metadata")
+		case manifest.UpstreamRepo != cfg.UpstreamRepo:
+			issues = append(issues, fmt.Sprintf("upstream repo mismatch: want %q got %q", cfg.UpstreamRepo, manifest.UpstreamRepo))
+		}
+	}
+	if cfg.UpstreamVersion != "" {
+		switch {
+		case manifest.UpstreamVersion == "":
+			issues = append(issues, "manifest missing upstream version metadata")
+		case manifest.UpstreamVersion != cfg.UpstreamVersion:
+			issues = append(issues, fmt.Sprintf("upstream version mismatch: want %q got %q", cfg.UpstreamVersion, manifest.UpstreamVersion))
+		}
 	}
 
 	sourceFiles, _, err := readSnapshot(cfg.SnapshotDir)
@@ -153,9 +179,15 @@ func Status(cfg Config) (StatusReport, error) {
 	}, nil
 }
 
-func validateConfig(cfg Config) error {
+func validateConfig(cfg Config, requireUpstream bool) error {
 	if cfg.Version == "" {
 		return errors.New("version is required")
+	}
+	if requireUpstream && cfg.UpstreamVersion == "" {
+		return errors.New("upstream version is required")
+	}
+	if cfg.UpstreamVersion != "" && cfg.UpstreamRepo == "" {
+		return errors.New("upstream repo is required when upstream version is set")
 	}
 	if cfg.SnapshotDir == "" {
 		return errors.New("snapshot dir is required")

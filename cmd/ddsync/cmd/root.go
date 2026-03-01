@@ -10,21 +10,26 @@ import (
 )
 
 const (
-	defaultSnapshotDir = "sync/snapshots/v1"
-	defaultOutputPath  = "sync/compiled.json"
-	defaultManifest    = "sync/manifest.json"
-	defaultVersion     = "v1"
+	defaultSnapshotDir  = "sync/snapshots/v1"
+	defaultOutputPath   = "sync/compiled.json"
+	defaultManifest     = "sync/manifest.json"
+	defaultProvenance   = "compliance/provenance.json"
+	defaultVersion      = "v1"
+	defaultUpstreamRepo = "matomo-org/device-detector"
 )
 
 // BuildVersion is set during builds via -ldflags.
 var BuildVersion = "dev"
 
 type rootOptions struct {
-	snapshotDir string
-	outputPath  string
-	manifest    string
-	version     string
-	jsonOutput  bool
+	snapshotDir     string
+	outputPath      string
+	manifest        string
+	provenancePath  string
+	version         string
+	upstreamRepo    string
+	upstreamVersion string
+	jsonOutput      bool
 }
 
 // Execute runs the ddsync root command with process stdio.
@@ -50,7 +55,10 @@ func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
 	flags.StringVar(&opts.snapshotDir, "snapshot-dir", defaultSnapshotDir, "Path to pinned snapshot directory")
 	flags.StringVar(&opts.outputPath, "output", defaultOutputPath, "Path to generated deterministic artifact")
 	flags.StringVar(&opts.manifest, "manifest", defaultManifest, "Path to generated manifest")
-	flags.StringVar(&opts.version, "version", defaultVersion, "Pinned snapshot version")
+	flags.StringVar(&opts.provenancePath, "provenance", defaultProvenance, "Path to compliance provenance metadata")
+	flags.StringVar(&opts.version, "version", defaultVersion, "Internal artifact/snapshot version")
+	flags.StringVar(&opts.upstreamRepo, "upstream-repo", defaultUpstreamRepo, "Upstream repository slug for source data")
+	flags.StringVar(&opts.upstreamVersion, "upstream-version", "", "Required upstream source tag/commit for pinned snapshot data")
 	flags.BoolVar(&opts.jsonOutput, "json", false, "Emit structured JSON output")
 
 	cmd.AddCommand(
@@ -66,9 +74,11 @@ func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
 
 func (o *rootOptions) config() ddsync.Config {
 	return ddsync.Config{
-		Version:      strings.TrimSpace(o.version),
-		SnapshotDir:  strings.TrimSpace(o.snapshotDir),
-		OutputPath:   strings.TrimSpace(o.outputPath),
-		ManifestPath: strings.TrimSpace(o.manifest),
+		Version:         strings.TrimSpace(o.version),
+		UpstreamRepo:    strings.TrimSpace(o.upstreamRepo),
+		UpstreamVersion: strings.TrimSpace(o.upstreamVersion),
+		SnapshotDir:     strings.TrimSpace(o.snapshotDir),
+		OutputPath:      strings.TrimSpace(o.outputPath),
+		ManifestPath:    strings.TrimSpace(o.manifest),
 	}
 }

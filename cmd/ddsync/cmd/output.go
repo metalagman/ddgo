@@ -12,6 +12,8 @@ import (
 type updateResult struct {
 	Operation       string `json:"operation"`
 	SnapshotVersion string `json:"snapshot_version"`
+	UpstreamRepo    string `json:"upstream_repo"`
+	UpstreamVersion string `json:"upstream_version"`
 	SourceFiles     int    `json:"source_files"`
 	OutputPath      string `json:"output_path"`
 	ManifestPath    string `json:"manifest_path"`

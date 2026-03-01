@@ -38,7 +38,18 @@ jobs:
         run: go test -race ./...
 
       - name: Sync artifact verification
-        run: go run ./cmd/ddsync verify --version v1 --json
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          upstream_repo=$(python3 -c 'import json;print(json.load(open("compliance/provenance.json"))["sources"][0]["name"])')
+          upstream_version=$(python3 -c 'import json;print(json.load(open("compliance/provenance.json"))["sources"][0]["upstream_version"])')
+
+          go run ./cmd/ddsync verify \
+            --version v1 \
+            --upstream-repo "${upstream_repo}" \
+            --upstream-version "${upstream_version}" \
+            --json
 
       - name: Compliance checks
         shell: bash
@@ -51,6 +62,7 @@ jobs:
           test -f compliance/provenance.json
 
           grep -q '"license": "LGPL-3.0-or-later"' compliance/provenance.json
+          grep -q '"upstream_version": "' compliance/provenance.json
 
           compiled_sha=$(sha256sum sync/compiled.json | awk '{print $1}')
           manifest_sha=$(sha256sum sync/manifest.json | awk '{print $1}')
