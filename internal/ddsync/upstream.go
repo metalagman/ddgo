@@ -28,7 +28,7 @@ func ResolveLatestStableTag(upstreamRepo string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), upstreamResolveTimeout)
 	defer cancel()
 
-	repoURL := "https://github.com/" + strings.TrimSuffix(upstreamRepo, ".git") + ".git"
+	repoURL := upstreamRepoURL(upstreamRepo)
 	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--tags", "--refs", repoURL)
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
@@ -47,6 +47,10 @@ func ResolveLatestStableTag(upstreamRepo string) (string, error) {
 		return "", err
 	}
 	return tag, nil
+}
+
+func upstreamRepoURL(upstreamRepo string) string {
+	return "https://github.com/" + strings.TrimSuffix(strings.TrimSpace(upstreamRepo), ".git") + ".git"
 }
 
 func latestStableTagFromRemote(output []byte) (string, error) {

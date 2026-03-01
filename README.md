@@ -21,7 +21,7 @@ Runnable examples are in [`example_test.go`](example_test.go).
 
 ## ddsync CLI (Cobra)
 
-`ddsync` manages deterministic artifacts from pinned snapshots.
+`ddsync` mirrors upstream Device Detector regex data and generates deterministic artifacts.
 
 ```bash
 go run ./cmd/ddsync update
@@ -41,6 +41,7 @@ Machine-readable output is available with `--json`.
 Version semantics:
 
 - `ddsync` resolves the latest stable semver tag from `--upstream-repo` (defaults to `matomo-org/device-detector`) using git tags.
+- `ddsync update` clones that upstream tag and mirrors the full `regexes/` directory into `sync/current/`.
 - If upstream tags cannot be resolved, `ddsync` fails fast.
 
 ## Development checks
@@ -58,7 +59,7 @@ go run ./cmd/ddsync verify --json
 
 ## Snapshot artifacts
 
-Pinned source snapshot directory: `sync/current/`
+Current mirrored source snapshot directory: `sync/current/`
 
 Generated artifacts:
 

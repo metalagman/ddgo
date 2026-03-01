@@ -5,15 +5,105 @@
   "source_files": [
     {
       "path": "bots.yml",
-      "sha256": "6a41f8ffae39e2a92cea1a71fac00c98d8751c78a7e5132f9ecd82547bfb67c3",
-      "size": 125
+      "sha256": "eed75034b1392bc5448fff5e187a6463fffd00cfbdbae23a763335bc7714a469",
+      "size": 143385
     },
     {
-      "path": "clients.yml",
-      "sha256": "a6bdbb999d6d326fd27006974b44d2139b8ad0b3d12fd5b1b77bb312e72fe337",
-      "size": 131
+      "path": "client/browser_engine.yml",
+      "sha256": "e34514728a4ba9751e96102726e3f7400c7f80db5b247a2e93f567c6a9a9c165",
+      "size": 945
+    },
+    {
+      "path": "client/browsers.yml",
+      "sha256": "8ed3584ea8e45f513c619647ca9ec78532c0c2e0757765e41966895d51e077ef",
+      "size": 78748
+    },
+    {
+      "path": "client/feed_readers.yml",
+      "sha256": "b720517d37d2d7fb2845630d8a957abfe20200254d93d295de88025ba3f88b4d",
+      "size": 3483
+    },
+    {
+      "path": "client/hints/apps.yml",
+      "sha256": "05c486c862c8cfda2b0090f022a5f433ceb0116872710eb4334c0b7999ac2a8e",
+      "size": 7392
+    },
+    {
+      "path": "client/hints/browsers.yml",
+      "sha256": "3f3add87ff4a299950041f1fd411324902d40361a939debc3e7a4ac68766d051",
+      "size": 14420
+    },
+    {
+      "path": "client/libraries.yml",
+      "sha256": "e3eb7de2ad577e6e6c8d63174abe6458b7cd6a148df29d3d15c853fe6586b8d3",
+      "size": 16313
+    },
+    {
+      "path": "client/mediaplayers.yml",
+      "sha256": "5cfda935bdebba405dfea6df39e31b5c50e7d6a357a10e2a3beca192457fda1e",
+      "size": 3833
+    },
+    {
+      "path": "client/mobile_apps.yml",
+      "sha256": "6ea524edb540650e6e87eb3cc81b07dd52181f3b067fb04676314fd345ada3d6",
+      "size": 68529
+    },
+    {
+      "path": "client/pim.yml",
+      "sha256": "05cc12efa1afa4c01119b159d55c0c543841f2a0bf1af50f667663a5bc3baaa3",
+      "size": 3829
+    },
+    {
+      "path": "device/cameras.yml",
+      "sha256": "18cf615b99af9c583bb9b2f9fc3424b28abb9ffd9614c63320149067f9c031af",
+      "size": 654
+    },
+    {
+      "path": "device/car_browsers.yml",
+      "sha256": "889dce891765bb76e6b8bcd27b54155256f5ac9a105e84c591e5fe15f16f3784",
+      "size": 1047
+    },
+    {
+      "path": "device/consoles.yml",
+      "sha256": "ef80d88ef2f6e8b870860d289e3a5fba76abb4f3044f535f0f6154ae4d7c135d",
+      "size": 1736
+    },
+    {
+      "path": "device/mobiles.yml",
+      "sha256": "436f57721ae62c2234319101ce5bf30d3880a85e82a18d1d710d5e3b8ee1b7d0",
+      "size": 1300626
+    },
+    {
+      "path": "device/notebooks.yml",
+      "sha256": "02758311a62310d134a9448b652b81d34f403144b0152e159f1745adf81f081d",
+      "size": 3448
+    },
+    {
+      "path": "device/portable_media_player.yml",
+      "sha256": "8fa5514f486b377e67cd1aa7e0a887a631a97c03334b75e4d58dce2f76ffcce6",
+      "size": 3038
+    },
+    {
+      "path": "device/shell_tv.yml",
+      "sha256": "1be3b97ec589d4cf79be7ad32f9625f1e1ead343dacf7d88bdb0760542486a32",
+      "size": 1923
+    },
+    {
+      "path": "device/televisions.yml",
+      "sha256": "6e92ea9026b1a52b0aacdc28ab13e18c480c7cb98f08ac7abc64001c64e0dc20",
+      "size": 32898
+    },
+    {
+      "path": "oss.yml",
+      "sha256": "7da797484ec66a4f97af53a34f9295e2e04e1eeda3102f8b199a8f2ec5f29282",
+      "size": 49224
+    },
+    {
+      "path": "vendorfragments.yml",
+      "sha256": "7e49f5990708c4d849f790b5ff04e26ecf4a7dcc31a215822e8584f194d23c7f",
+      "size": 918
     }
   ],
   "output_path": "sync/compiled.json",
-  "output_sha256": "5a912dc2ca74599e96753382c97b0814c580de7cd8a4cf48212a5644632c3936"
+  "output_sha256": "15318f015b5e850b887a10eb8abf8dbf942fa62b509d0b2c89d7e5e5de16ee37"
 }

@@ -8,7 +8,7 @@ This repository includes data and compatibility behavior derived from third-part
 - Upstream: https://github.com/matomo-org/device-detector
 - License: LGPL-3.0-or-later
 - Local usage:
-  - Current source snapshot inputs in `sync/current/`
+  - Current mirrored `regexes/` snapshot inputs in `sync/current/`
   - Deterministic generated artifact in `sync/compiled.json`
   - Provenance metadata in `compliance/provenance.json`
 - License copy: `licenses/LGPL-3.0-or-later.txt`

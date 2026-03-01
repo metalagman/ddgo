@@ -29,6 +29,7 @@ type rootOptions struct {
 	upstreamRepo       string
 	jsonOutput         bool
 	resolveUpstreamTag func(string) (string, error)
+	syncSnapshot       func(ddsync.Config) error
 }
 
 // Execute runs the ddsync root command with process stdio.
@@ -38,12 +39,17 @@ func Execute() error {
 
 // NewRootCommand creates the Cobra root command with subcommands.
 func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
-	return newRootCommandWithResolver(stdout, stderr, ddsync.ResolveLatestStableTag)
+	return newRootCommandWithDependencies(stdout, stderr, ddsync.ResolveLatestStableTag, ddsync.SyncSnapshotFromUpstream)
 }
 
-func newRootCommandWithResolver(stdout, stderr io.Writer, resolver func(string) (string, error)) *cobra.Command {
+func newRootCommandWithDependencies(
+	stdout, stderr io.Writer,
+	resolver func(string) (string, error),
+	syncSnapshot func(ddsync.Config) error,
+) *cobra.Command {
 	opts := &rootOptions{}
 	opts.resolveUpstreamTag = resolver
+	opts.syncSnapshot = syncSnapshot
 
 	cmd := &cobra.Command{
 		Use:           "ddsync",

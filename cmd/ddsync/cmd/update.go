@@ -16,6 +16,12 @@ func newUpdateCommand(opts *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if opts.syncSnapshot == nil {
+				return fmt.Errorf("snapshot sync is not configured")
+			}
+			if err := opts.syncSnapshot(cfg); err != nil {
+				return err
+			}
 
 			manifest, err := ddsync.Update(cfg)
 			if err != nil {

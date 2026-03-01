@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/metalagman/ddgo/internal/ddsync"
 )
 
 const testResolvedUpstreamVersion = "v6.0.0"
@@ -204,6 +206,35 @@ func TestUpdateFailsWhenResolverFails(t *testing.T) {
 	}
 }
 
+func TestUpdateFailsWhenSnapshotSyncFails(t *testing.T) {
+	t.Parallel()
+
+	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	root := newRootCommandWithDependencies(
+		&out,
+		&stderr,
+		func(string) (string, error) { return testResolvedUpstreamVersion, nil },
+		func(ddsync.Config) error { return fmt.Errorf("snapshot sync failed") },
+	)
+	root.SetArgs([]string{
+		"update",
+		"--snapshot-dir", snapshotDir,
+		"--output", outputPath,
+		"--manifest", manifestPath,
+		"--provenance", provenancePath,
+	})
+
+	_, err := root.ExecuteC()
+	if err == nil {
+		t.Fatal("expected update to fail when snapshot sync fails")
+	}
+	if !strings.Contains(err.Error(), "snapshot sync failed") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestUpdateRequiresUpstreamRepo(t *testing.T) {
 	t.Parallel()
 
@@ -296,7 +327,7 @@ func execCommandWithResolver(t *testing.T, resolver func(string) (string, error)
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
-	root := newRootCommandWithResolver(&out, &stderr, resolver)
+	root := newRootCommandWithDependencies(&out, &stderr, resolver, func(ddsync.Config) error { return nil })
 	root.SetArgs(args)
 	_, err := root.ExecuteC()
 	return out.String(), stderr.String(), err
