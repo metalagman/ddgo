@@ -1,9 +1,12 @@
 package ddgo
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"strings"
 )
+
+var ErrNilDetector = errors.New("ddgo: nil detector")
 
 // Detector parses user-agent strings into structured detection results.
 //
@@ -31,43 +34,31 @@ func New(opts ...Option) (*Detector, error) {
 	}, nil
 }
 
-// MustNew creates a detector and exits the process if initialization fails.
-func MustNew(opts ...Option) *Detector {
-	detector, err := New(opts...)
-	if err != nil {
-		log.Fatalf("ddgo: detector initialization failed: %v", err)
-	}
-	return detector
-}
-
 // Parse analyzes a user-agent string and returns a detection result.
 //
 // Parse can return cached results for identical normalized user-agent inputs.
-// Parse panics if called on a nil Detector.
-func (d *Detector) Parse(userAgent string) Result {
+func (d *Detector) Parse(userAgent string) (Result, error) {
 	return d.parse(userAgent, ClientHints{}, true)
 }
 
 // ParseWithClientHints analyzes a user-agent string with explicit client hints.
 //
-// Hint-based parsing bypasses the internal Parse cache. ParseWithClientHints
-// panics if called on a nil Detector.
-func (d *Detector) ParseWithClientHints(userAgent string, hints ClientHints) Result {
+// Hint-based parsing bypasses the internal Parse cache.
+func (d *Detector) ParseWithClientHints(userAgent string, hints ClientHints) (Result, error) {
 	return d.parse(userAgent, hints, false)
 }
 
 // ParseWithHeaders analyzes a user-agent string and Sec-CH-UA style headers.
 //
 // This helper normalizes headers via ParseClientHintsFromHeaders and then
-// delegates to ParseWithClientHints. ParseWithHeaders panics if called on a nil
-// Detector.
-func (d *Detector) ParseWithHeaders(userAgent string, headers map[string]string) Result {
+// delegates to ParseWithClientHints.
+func (d *Detector) ParseWithHeaders(userAgent string, headers map[string]string) (Result, error) {
 	return d.parse(userAgent, ParseClientHintsFromHeaders(headers), false)
 }
 
-func (d *Detector) parse(userAgent string, hints ClientHints, allowCache bool) Result {
+func (d *Detector) parse(userAgent string, hints ClientHints, allowCache bool) (Result, error) {
 	if d == nil {
-		d = MustNew()
+		return Result{}, ErrNilDetector
 	}
 
 	ua := normalizeUserAgent(userAgent, d.opts.trimWhitespace)
@@ -76,17 +67,33 @@ func (d *Detector) parse(userAgent string, hints ClientHints, allowCache bool) R
 	}
 	if allowCache && d.cache != nil {
 		if cached, ok := d.cache.Get(ua); ok {
-			return cached
+			return cached, nil
 		}
 	}
 
-	bot := parseBot(ua)
+	bot, err := parseBot(ua)
+	if err != nil {
+		return Result{}, fmt.Errorf("parse bot: %w", err)
+	}
+	client, err := parseClient(ua, bot.IsBot)
+	if err != nil {
+		return Result{}, fmt.Errorf("parse client: %w", err)
+	}
+	osInfo, err := parseOS(ua)
+	if err != nil {
+		return Result{}, fmt.Errorf("parse os: %w", err)
+	}
+	device, err := parseDevice(ua, bot.IsBot)
+	if err != nil {
+		return Result{}, fmt.Errorf("parse device: %w", err)
+	}
+
 	result := Result{
 		UserAgent: ua,
 		Bot:       bot,
-		Client:    parseClient(ua, bot.IsBot),
-		OS:        parseOS(ua),
-		Device:    parseDevice(ua, bot.IsBot),
+		Client:    client,
+		OS:        osInfo,
+		Device:    device,
 	}
 	if !bot.IsBot {
 		applyClientHints(&result, hints)
@@ -94,7 +101,7 @@ func (d *Detector) parse(userAgent string, hints ClientHints, allowCache bool) R
 	if allowCache && d.cache != nil {
 		d.cache.Set(ua, result)
 	}
-	return result
+	return result, nil
 }
 
 func normalizeUserAgent(userAgent string, trimWhitespace bool) string {

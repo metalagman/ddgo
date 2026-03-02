@@ -2,8 +2,8 @@ package ddgo
 
 import (
 	"fmt"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/dlclark/regexp2"
 	"gopkg.in/yaml.v3"
@@ -58,12 +58,11 @@ func loadBotRules() ([]botRule, error) {
 			if item.Regex == "" {
 				continue
 			}
-			re, err := regexp2.Compile(normalizeRulePattern(item.Regex), 0)
+			re, err := compileRuleRegex(item.Regex)
 			if err != nil {
-				// Keep parser operational even if one upstream rule is invalid for current engine mode.
-				continue
+				botRulesErr = fmt.Errorf("compile bots.yml regex %q: %w", item.Regex, err)
+				return
 			}
-			re.MatchTimeout = 100 * time.Millisecond
 
 			compiled = append(compiled, botRule{
 				pattern:  re,
@@ -86,6 +85,7 @@ func loadBotRules() ([]botRule, error) {
 }
 
 func defaultString(value, fallback string) string {
+	value = strings.TrimSpace(value)
 	if value == "" {
 		return fallback
 	}

@@ -53,7 +53,7 @@ func TestParseBotUsesSnapshotRules(t *testing.T) {
 	t.Parallel()
 
 	ua := "monitoring360bot/1.1"
-	result := newTestDetector(t).Parse(ua)
+	result := mustParse(t, newTestDetector(t), ua)
 
 	if !result.Bot.IsBot {
 		t.Fatalf("expected bot detection for %q", ua)

@@ -67,15 +67,25 @@ func normalizeRuleField(value string) string {
 	return value
 }
 
-func matchRegexp2String(pattern *regexp2.Regexp, input string) (*regexp2.Match, bool) {
+func matchRegexp2String(pattern *regexp2.Regexp, input string) (*regexp2.Match, bool, error) {
 	if pattern == nil {
-		return nil, false
+		return nil, false, nil
 	}
 	match, err := pattern.FindStringMatch(input)
-	if err != nil || match == nil {
-		return nil, false
+	if err != nil {
+		if isRegexp2MatchTimeout(err) {
+			return nil, false, nil
+		}
+		return nil, false, err
 	}
-	return match, true
+	if match == nil {
+		return nil, false, nil
+	}
+	return match, true, nil
+}
+
+func isRegexp2MatchTimeout(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "match timeout after")
 }
 
 func missingSnapshotFileError(path string) error {

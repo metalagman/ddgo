@@ -2,7 +2,6 @@ package ddgo
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"unicode"
@@ -55,15 +54,17 @@ var (
 	deviceRulesErr  error
 )
 
-func parseDeviceSnapshot(ua string) (Device, bool) {
+func parseDeviceSnapshot(ua string) (Device, bool, error) {
 	rules, err := loadDeviceRules()
 	if err != nil {
-		log.Fatalf("ddgo: device rules not initialized: %v", err)
-		return Device{}, false
+		return Device{}, false, fmt.Errorf("load device rules: %w", err)
 	}
 
 	for _, rule := range rules {
-		topMatch, ok := matchRegexp2String(rule.pattern, ua)
+		topMatch, ok, matchErr := matchRegexp2String(rule.pattern, ua)
+		if matchErr != nil {
+			return Device{}, false, fmt.Errorf("match device rule for brand %q: %w", rule.brand, matchErr)
+		}
 		if !ok {
 			continue
 		}
@@ -71,7 +72,10 @@ func parseDeviceSnapshot(ua string) (Device, bool) {
 		deviceType := normalizeDeviceType(rule.deviceType)
 		model := normalizeModel(expandRuleTemplate(rule.modelTemplate, topMatch))
 		for _, nested := range rule.models {
-			nestedMatch, nestedOK := matchRegexp2String(nested.pattern, ua)
+			nestedMatch, nestedOK, nestedErr := matchRegexp2String(nested.pattern, ua)
+			if nestedErr != nil {
+				return Device{}, false, fmt.Errorf("match nested device rule for brand %q: %w", rule.brand, nestedErr)
+			}
 			if !nestedOK {
 				continue
 			}
@@ -88,10 +92,10 @@ func parseDeviceSnapshot(ua string) (Device, bool) {
 			Type:  deviceType,
 			Brand: normalizeRuleField(rule.brand),
 			Model: model,
-		}, true
+		}, true, nil
 	}
 
-	return Device{}, false
+	return Device{}, false, nil
 }
 
 func loadDeviceRules() ([]deviceRule, error) {

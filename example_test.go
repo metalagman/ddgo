@@ -12,7 +12,10 @@ func ExampleNew() {
 	if err != nil {
 		log.Fatalf("ddgo.New() failed: %v", err)
 	}
-	result := detector.Parse("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0")
+	result, err := detector.Parse("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0")
+	if err != nil {
+		log.Fatalf("Parse() failed: %v", err)
+	}
 
 	fmt.Printf("%s %s\n", result.Client.Name, result.Client.Version)
 	// Output:
@@ -24,7 +27,10 @@ func ExampleDetector_Parse() {
 	if err != nil {
 		log.Fatalf("ddgo.New() failed: %v", err)
 	}
-	result := detector.Parse("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
+	result, err := detector.Parse("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
+	if err != nil {
+		log.Fatalf("Parse() failed: %v", err)
+	}
 
 	fmt.Printf("is_bot=%t name=%s device=%s\n", result.Bot.IsBot, result.Bot.Name, result.Device.Type)
 	// Output:
@@ -45,7 +51,10 @@ func ExampleDetector_ParseWithClientHints() {
 		Mobile:          &mobile,
 	}
 
-	result := detector.ParseWithClientHints("Mozilla/5.0", hints)
+	result, err := detector.ParseWithClientHints("Mozilla/5.0", hints)
+	if err != nil {
+		log.Fatalf("ParseWithClientHints() failed: %v", err)
+	}
 	fmt.Printf("%s %s on %s (%s)\n", result.Client.Name, result.Client.Version, result.OS.Name, result.Device.Model)
 	// Output:
 	// Chrome 122.0.6261.128 on Android (SM-G991B)
@@ -63,7 +72,10 @@ func ExampleDetector_ParseWithHeaders() {
 		"Sec-CH-UA-Mobile":           "?0",
 	}
 
-	result := detector.ParseWithHeaders("Mozilla/5.0", headers)
+	result, err := detector.ParseWithHeaders("Mozilla/5.0", headers)
+	if err != nil {
+		log.Fatalf("ParseWithHeaders() failed: %v", err)
+	}
 	fmt.Printf("%s %s (%s)\n", result.Client.Name, result.Client.Version, result.Device.Type)
 	// Output:
 	// Microsoft Edge 123.0.0.0 (Desktop)
@@ -74,7 +86,10 @@ func ExampleWithMaxUserAgentLen() {
 	if err != nil {
 		log.Fatalf("ddgo.New() failed: %v", err)
 	}
-	result := detector.Parse("Mozilla/5.0")
+	result, err := detector.Parse("Mozilla/5.0")
+	if err != nil {
+		log.Fatalf("Parse() failed: %v", err)
+	}
 
 	fmt.Println(result.UserAgent)
 	// Output:
@@ -86,7 +101,10 @@ func ExampleWithUserAgentTrimming() {
 	if err != nil {
 		log.Fatalf("ddgo.New() failed: %v", err)
 	}
-	result := detector.Parse("  Mozilla/5.0  ")
+	result, err := detector.Parse("  Mozilla/5.0  ")
+	if err != nil {
+		log.Fatalf("Parse() failed: %v", err)
+	}
 
 	fmt.Printf("%q\n", result.UserAgent)
 	// Output:

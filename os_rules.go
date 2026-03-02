@@ -2,7 +2,6 @@ package ddgo
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 
@@ -40,15 +39,17 @@ var (
 	osRulesErr  error
 )
 
-func parseOSSnapshot(ua string) (OS, bool) {
+func parseOSSnapshot(ua string) (OS, bool, error) {
 	rules, err := loadOSRules()
 	if err != nil {
-		log.Fatalf("ddgo: os rules not initialized: %v", err)
-		return OS{}, false
+		return OS{}, false, fmt.Errorf("load os rules: %w", err)
 	}
 
 	for _, rule := range rules {
-		match, ok := matchRegexp2String(rule.pattern, ua)
+		match, ok, matchErr := matchRegexp2String(rule.pattern, ua)
+		if matchErr != nil {
+			return OS{}, false, fmt.Errorf("match os rule: %w", matchErr)
+		}
 		if !ok {
 			continue
 		}
@@ -57,7 +58,10 @@ func parseOSSnapshot(ua string) (OS, bool) {
 		version := normalizeRuleVersion(expandRuleTemplate(rule.versionTemplate, match))
 		if version == Unknown && len(rule.versions) > 0 {
 			for _, nested := range rule.versions {
-				nestedMatch, nestedOK := matchRegexp2String(nested.pattern, ua)
+				nestedMatch, nestedOK, nestedErr := matchRegexp2String(nested.pattern, ua)
+				if nestedErr != nil {
+					return OS{}, false, fmt.Errorf("match os version rule: %w", nestedErr)
+				}
 				if !nestedOK {
 					continue
 				}
@@ -72,10 +76,10 @@ func parseOSSnapshot(ua string) (OS, bool) {
 			Name:     name,
 			Version:  version,
 			Platform: detectOSPlatform(ua, name),
-		}, true
+		}, true, nil
 	}
 
-	return OS{}, false
+	return OS{}, false, nil
 }
 
 func loadOSRules() ([]osRule, error) {

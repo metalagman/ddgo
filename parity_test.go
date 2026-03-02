@@ -66,9 +66,9 @@ func TestParityHeaderHintEquivalence(t *testing.T) {
 		if len(tc.Headers) == 0 {
 			continue
 		}
-		fromHeaders := detector.ParseWithHeaders(tc.UserAgent, tc.Headers)
+		fromHeaders := mustParseWithHeaders(t, detector, tc.UserAgent, tc.Headers)
 		hints := ParseClientHintsFromHeaders(tc.Headers)
-		fromHints := detector.ParseWithClientHints(tc.UserAgent, hints)
+		fromHints := mustParseWithHints(t, detector, tc.UserAgent, hints)
 		if reflect.DeepEqual(fromHeaders, fromHints) {
 			continue
 		}
@@ -114,10 +114,10 @@ func runParityCases(t *testing.T, cases []parityCase) map[string]Result {
 			t.Fatalf("duplicate parity fixture id %q", tc.ID)
 		}
 		if len(tc.Headers) == 0 {
-			results[tc.ID] = detector.Parse(tc.UserAgent)
+			results[tc.ID] = mustParse(t, detector, tc.UserAgent)
 			continue
 		}
-		results[tc.ID] = detector.ParseWithHeaders(tc.UserAgent, tc.Headers)
+		results[tc.ID] = mustParseWithHeaders(t, detector, tc.UserAgent, tc.Headers)
 	}
 	return results
 }

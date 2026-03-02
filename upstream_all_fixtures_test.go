@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"unicode"
 
 	"gopkg.in/yaml.v3"
 )
@@ -104,9 +103,9 @@ func TestUpstreamAllFixturesSmoke(t *testing.T) {
 			var result Result
 			if len(headers) > 0 {
 				headerCases++
-				result = detector.ParseWithHeaders(fixture.UserAgent, headers)
+				result = mustParseWithHeaders(t, detector, fixture.UserAgent, headers)
 			} else {
-				result = detector.Parse(fixture.UserAgent)
+				result = mustParse(t, detector, fixture.UserAgent)
 			}
 
 			if ua != "" && strings.TrimSpace(result.UserAgent) == "" {
@@ -176,9 +175,9 @@ func TestUpstreamFixtureDifferentialParity(t *testing.T) {
 
 		for i, fixture := range fixtures {
 			headers := normalizeFixtureHeaders(fixture.Headers)
-			result := detector.Parse(fixture.UserAgent)
+			result := mustParse(t, detector, fixture.UserAgent)
 			if len(headers) > 0 {
-				result = detector.ParseWithHeaders(fixture.UserAgent, headers)
+				result = mustParseWithHeaders(t, detector, fixture.UserAgent, headers)
 			}
 
 			expectedBotName := mapStringValue(fixture.Bot, "name")
@@ -474,9 +473,6 @@ func TestUpstreamFixtureFilesAreReadable(t *testing.T) {
 		if len(strings.TrimSpace(string(data))) == 0 {
 			unreadable = append(unreadable, fmt.Sprintf("%s: empty", path))
 			return nil
-		}
-		if unicode.IsSpace(rune(data[0])) {
-			// no-op; explicit read/inspection to avoid accidental binary files
 		}
 		return nil
 	})

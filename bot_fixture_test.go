@@ -38,7 +38,7 @@ func TestUpstreamBotFixtures(t *testing.T) {
 	detectedBots := 0
 	nameMatches := 0
 	for i, fixture := range fixtures {
-		result := detector.Parse(fixture.UserAgent)
+		result := mustParse(t, detector, fixture.UserAgent)
 		if !result.Bot.IsBot {
 			detectionMisses = append(detectionMisses, fmt.Sprintf("#%d: expected bot detection for %q", i, fixture.UserAgent))
 			continue

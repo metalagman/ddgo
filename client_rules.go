@@ -2,7 +2,6 @@ package ddgo
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"sync"
@@ -78,16 +77,18 @@ var (
 	reEngineArachne      = regexp.MustCompile(`\bxChaos_Arachne/([0-9.]+)\b`)
 )
 
-func parseClientSnapshot(ua string) (Client, bool) {
+func parseClientSnapshot(ua string) (Client, bool, error) {
 	ruleSets, err := loadClientRules()
 	if err != nil {
-		log.Fatalf("ddgo: client rules not initialized: %v", err)
-		return Client{}, false
+		return Client{}, false, fmt.Errorf("load client rules: %w", err)
 	}
 
 	for _, set := range ruleSets {
 		for _, rule := range set.rules {
-			match, ok := matchRegexp2String(rule.pattern, ua)
+			match, ok, matchErr := matchRegexp2String(rule.pattern, ua)
+			if matchErr != nil {
+				return Client{}, false, fmt.Errorf("match client rule: %w", matchErr)
+			}
 			if !ok {
 				continue
 			}
@@ -99,8 +100,7 @@ func parseClientSnapshot(ua string) (Client, bool) {
 			if engine == "" {
 				engine, err = detectClientEngine(ua)
 				if err != nil {
-					log.Fatalf("ddgo: client engine rules not initialized: %v", err)
-					return Client{}, false
+					return Client{}, false, fmt.Errorf("detect client engine: %w", err)
 				}
 			}
 			engine = normalizeRuleField(engine)
@@ -116,11 +116,11 @@ func parseClientSnapshot(ua string) (Client, bool) {
 				Version:       version,
 				Engine:        engine,
 				EngineVersion: engineVersion,
-			}, true
+			}, true, nil
 		}
 	}
 
-	return Client{}, false
+	return Client{}, false, nil
 }
 
 func loadClientRules() ([]clientRuleSet, error) {
@@ -227,7 +227,11 @@ func detectClientEngine(ua string) (string, error) {
 		return Unknown, err
 	}
 	for _, rule := range rules {
-		if _, ok := matchRegexp2String(rule.pattern, ua); ok {
+		_, ok, matchErr := matchRegexp2String(rule.pattern, ua)
+		if matchErr != nil {
+			return Unknown, fmt.Errorf("match client engine rule: %w", matchErr)
+		}
+		if ok {
 			return rule.name, nil
 		}
 	}

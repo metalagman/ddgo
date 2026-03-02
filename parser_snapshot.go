@@ -1,32 +1,38 @@
 package ddgo
 
-func parseClient(ua string, isBot bool) Client {
+func parseClient(ua string, isBot bool) (Client, error) {
 	if isBot {
-		return unknownClient()
+		return unknownClient(), nil
 	}
-	if client, ok := parseClientSnapshot(ua); ok {
-		return client
+	if client, ok, err := parseClientSnapshot(ua); err != nil {
+		return Client{}, err
+	} else if ok {
+		return client, nil
 	}
-	return parseClientLegacy(ua, false)
+	return parseClientLegacy(ua, false), nil
 }
 
-func parseOS(ua string) OS {
-	if os, ok := parseOSSnapshot(ua); ok {
-		return os
+func parseOS(ua string) (OS, error) {
+	if os, ok, err := parseOSSnapshot(ua); err != nil {
+		return OS{}, err
+	} else if ok {
+		return os, nil
 	}
-	return parseOSLegacy(ua)
+	return parseOSLegacy(ua), nil
 }
 
-func parseDevice(ua string, isBot bool) Device {
+func parseDevice(ua string, isBot bool) (Device, error) {
 	if isBot {
 		return Device{
 			Type:  "Bot",
 			Brand: Unknown,
 			Model: Unknown,
-		}
+		}, nil
 	}
-	if device, ok := parseDeviceSnapshot(ua); ok {
-		return device
+	if device, ok, err := parseDeviceSnapshot(ua); err != nil {
+		return Device{}, err
+	} else if ok {
+		return device, nil
 	}
-	return parseDeviceLegacy(ua, false)
+	return parseDeviceLegacy(ua, false), nil
 }

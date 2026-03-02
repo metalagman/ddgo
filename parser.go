@@ -1,7 +1,7 @@
 package ddgo
 
 import (
-	"log"
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -34,18 +34,17 @@ var (
 	rePixelModel   = regexp.MustCompile(`\b(Pixel(?: [A-Za-z0-9]+)*)\b`)
 )
 
-func parseBot(ua string) Bot {
+func parseBot(ua string) (Bot, error) {
 	rules, err := loadBotRules()
 	if err != nil {
-		log.Fatalf("ddgo: bot rules not initialized: %v", err)
-		return parseBotLegacy(ua)
+		return Bot{}, fmt.Errorf("load bot rules: %w", err)
 	}
 	for _, rule := range rules {
-		if rule.pattern == nil {
-			continue
+		_, matched, matchErr := matchRegexp2String(rule.pattern, ua)
+		if matchErr != nil {
+			return Bot{}, fmt.Errorf("match bot rule %q: %w", rule.name, matchErr)
 		}
-		matched, matchErr := rule.pattern.MatchString(ua)
-		if matchErr != nil || !matched {
+		if !matched {
 			continue
 		}
 		return Bot{
@@ -54,19 +53,10 @@ func parseBot(ua string) Bot {
 			Category: rule.category,
 			URL:      rule.url,
 			Producer: rule.producer,
-		}
+		}, nil
 	}
 
-	return Bot{
-		IsBot:    false,
-		Name:     Unknown,
-		Category: Unknown,
-		URL:      Unknown,
-		Producer: Producer{
-			Name: Unknown,
-			URL:  Unknown,
-		},
-	}
+	return parseBotLegacy(ua), nil
 }
 
 func parseBotLegacy(ua string) Bot {
