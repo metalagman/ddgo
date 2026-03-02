@@ -1,15 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"log"
 
 	ddcmd "github.com/metalagman/ddgo/cmd/ddsync/cmd"
 )
 
 func main() {
-	if err := ddcmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
-		os.Exit(1)
+	err := ddcmd.Execute("dev")
+	if err != nil {
+		log.Fatalf("error: %v", err)
 	}
 }

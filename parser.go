@@ -34,12 +34,8 @@ var (
 	rePixelModel   = regexp.MustCompile(`\b(Pixel(?: [A-Za-z0-9]+)*)\b`)
 )
 
-func parseBot(ua string) (Bot, error) {
-	rules, err := loadBotRules()
-	if err != nil {
-		return Bot{}, fmt.Errorf("load bot rules: %w", err)
-	}
-	for _, rule := range rules {
+func parseBot(runtime *parserRuntime, ua string) (Bot, error) {
+	for _, rule := range runtime.botRules {
 		_, matched, matchErr := matchRegexp2String(rule.pattern, ua)
 		if matchErr != nil {
 			return Bot{}, fmt.Errorf("match bot rule %q: %w", rule.name, matchErr)
@@ -119,109 +115,90 @@ func parseBotLegacy(ua string) Bot {
 	}
 }
 
-func parseClientLegacy(ua string, isBot bool) Client {
-	if isBot {
-		return unknownClient()
+func parseClientLegacy(ua string) Client {
+	client, ok := parseLegacyBrowserClient(ua)
+	if ok {
+		return client
 	}
+	client, ok = parseLegacyLibraryClient(ua)
+	if ok {
+		return client
+	}
+	return unknownClient()
+}
 
-	if matches := reClientEdge.FindStringSubmatch(ua); len(matches) > 1 {
-		return Client{
-			Type:          "Browser",
-			Name:          "Microsoft Edge",
-			Version:       matches[1],
-			Engine:        "Blink",
-			EngineVersion: matches[1],
-		}
+func parseLegacyBrowserClient(ua string) (Client, bool) {
+	matches := reClientEdge.FindStringSubmatch(ua)
+	if len(matches) > 1 {
+		return browserClient("Microsoft Edge", matches[1], "Blink", matches[1]), true
 	}
-	if matches := reClientEdgeAlt.FindStringSubmatch(ua); len(matches) > 1 {
+	matches = reClientEdgeAlt.FindStringSubmatch(ua)
+	if len(matches) > 1 {
 		engine := "Blink"
 		engineVersion := matches[1]
 		if strings.Contains(ua, "EdgiOS/") {
 			engine = "WebKit"
 			engineVersion = firstMatch(reWebKit, ua, matches[1])
 		}
-		return Client{
-			Type:          "Browser",
-			Name:          "Microsoft Edge",
-			Version:       matches[1],
-			Engine:        engine,
-			EngineVersion: engineVersion,
-		}
+		return browserClient("Microsoft Edge", matches[1], engine, engineVersion), true
 	}
-	if matches := reClientOpera.FindStringSubmatch(ua); len(matches) > 1 {
-		return Client{
-			Type:          "Browser",
-			Name:          "Opera",
-			Version:       matches[1],
-			Engine:        "Blink",
-			EngineVersion: matches[1],
-		}
+	matches = reClientOpera.FindStringSubmatch(ua)
+	if len(matches) > 1 {
+		return browserClient("Opera", matches[1], "Blink", matches[1]), true
 	}
-	if matches := reClientFirefoxOS.FindStringSubmatch(ua); len(matches) > 1 {
-		return Client{
-			Type:          "Browser",
-			Name:          "Firefox",
-			Version:       matches[1],
-			Engine:        "WebKit",
-			EngineVersion: firstMatch(reWebKit, ua, matches[1]),
-		}
+	matches = reClientFirefoxOS.FindStringSubmatch(ua)
+	if len(matches) > 1 {
+		return browserClient("Firefox", matches[1], "WebKit", firstMatch(reWebKit, ua, matches[1])), true
 	}
-	if matches := reClientFirefox.FindStringSubmatch(ua); len(matches) > 1 {
-		return Client{
-			Type:          "Browser",
-			Name:          "Firefox",
-			Version:       matches[1],
-			Engine:        "Gecko",
-			EngineVersion: firstMatch(reGeckoRV, ua, matches[1]),
-		}
+	matches = reClientFirefox.FindStringSubmatch(ua)
+	if len(matches) > 1 {
+		return browserClient("Firefox", matches[1], "Gecko", firstMatch(reGeckoRV, ua, matches[1])), true
 	}
-	if matches := reClientChromeOS.FindStringSubmatch(ua); len(matches) > 1 {
-		return Client{
-			Type:          "Browser",
-			Name:          "Chrome",
-			Version:       matches[1],
-			Engine:        "WebKit",
-			EngineVersion: firstMatch(reWebKit, ua, matches[1]),
-		}
+	matches = reClientChromeOS.FindStringSubmatch(ua)
+	if len(matches) > 1 {
+		return browserClient("Chrome", matches[1], "WebKit", firstMatch(reWebKit, ua, matches[1])), true
 	}
-	if matches := reClientChrome.FindStringSubmatch(ua); len(matches) > 1 {
-		return Client{
-			Type:          "Browser",
-			Name:          "Chrome",
-			Version:       matches[1],
-			Engine:        "Blink",
-			EngineVersion: matches[1],
-		}
+	matches = reClientChrome.FindStringSubmatch(ua)
+	if len(matches) > 1 {
+		return browserClient("Chrome", matches[1], "Blink", matches[1]), true
 	}
-	if matches := reClientSafari.FindStringSubmatch(ua); len(matches) > 1 {
-		return Client{
-			Type:          "Browser",
-			Name:          "Safari",
-			Version:       matches[1],
-			Engine:        "WebKit",
-			EngineVersion: firstMatch(reWebKit, ua, matches[1]),
-		}
+	matches = reClientSafari.FindStringSubmatch(ua)
+	if len(matches) > 1 {
+		return browserClient("Safari", matches[1], "WebKit", firstMatch(reWebKit, ua, matches[1])), true
 	}
-	if matches := reClientCurl.FindStringSubmatch(ua); len(matches) > 1 {
-		return Client{
-			Type:          "Library",
-			Name:          "curl",
-			Version:       matches[1],
-			Engine:        Unknown,
-			EngineVersion: Unknown,
-		}
-	}
-	if matches := reClientGoHTTP.FindStringSubmatch(ua); len(matches) > 1 {
-		return Client{
-			Type:          "Library",
-			Name:          "Go HTTP Client",
-			Version:       matches[1],
-			Engine:        Unknown,
-			EngineVersion: Unknown,
-		}
-	}
+	return Client{}, false
+}
 
-	return unknownClient()
+func parseLegacyLibraryClient(ua string) (Client, bool) {
+	matches := reClientCurl.FindStringSubmatch(ua)
+	if len(matches) > 1 {
+		return libraryClient("curl", matches[1]), true
+	}
+	matches = reClientGoHTTP.FindStringSubmatch(ua)
+	if len(matches) > 1 {
+		return libraryClient("Go HTTP Client", matches[1]), true
+	}
+	return Client{}, false
+}
+
+func browserClient(name, version, engine, engineVersion string) Client {
+	return Client{
+		Type:          "Browser",
+		Name:          name,
+		Version:       version,
+		Engine:        engine,
+		EngineVersion: engineVersion,
+	}
+}
+
+func libraryClient(name, version string) Client {
+	return Client{
+		Type:          "Library",
+		Name:          name,
+		Version:       version,
+		Engine:        Unknown,
+		EngineVersion: Unknown,
+	}
 }
 
 func parseOSLegacy(ua string) OS {
@@ -268,15 +245,7 @@ func parseOSLegacy(ua string) OS {
 	}
 }
 
-func parseDeviceLegacy(ua string, isBot bool) Device {
-	if isBot {
-		return Device{
-			Type:  "Bot",
-			Brand: Unknown,
-			Model: Unknown,
-		}
-	}
-
+func parseDeviceLegacy(ua string) Device {
 	switch {
 	case strings.Contains(ua, "iPad"):
 		return Device{
@@ -301,9 +270,9 @@ func parseDeviceLegacy(ua string, isBot bool) Device {
 		if matches := reSamsungModel.FindStringSubmatch(ua); len(matches) > 1 {
 			brand = "Samsung"
 			model = matches[1]
-		} else if matches := rePixelModel.FindStringSubmatch(ua); len(matches) > 1 {
+		} else if pixelMatches := rePixelModel.FindStringSubmatch(ua); len(pixelMatches) > 1 {
 			brand = "Google"
-			model = matches[1]
+			model = pixelMatches[1]
 		}
 
 		return Device{

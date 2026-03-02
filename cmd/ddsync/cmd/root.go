@@ -1,13 +1,15 @@
-package ddcmd
+package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	"github.com/metalagman/ddgo/internal/ddsync"
 	"github.com/spf13/cobra"
+
+	"github.com/metalagman/ddgo/internal/ddsync"
 )
 
 const (
@@ -18,8 +20,10 @@ const (
 	defaultUpstreamRepo = "matomo-org/device-detector"
 )
 
-// BuildVersion is set during builds via -ldflags.
-var BuildVersion = "dev"
+var (
+	errEmptyUpstreamRepo          = errors.New("--upstream-repo must not be empty")
+	errUpstreamResolverNotDefined = errors.New("upstream resolver is not configured")
+)
 
 type rootOptions struct {
 	snapshotDir        string
@@ -27,29 +31,42 @@ type rootOptions struct {
 	manifest           string
 	provenancePath     string
 	upstreamRepo       string
+	version            string
 	jsonOutput         bool
 	resolveUpstreamTag func(string) (string, error)
 	syncSnapshot       func(ddsync.Config) error
 }
 
 // Execute runs the ddsync root command with process stdio.
-func Execute() error {
-	return NewRootCommand(os.Stdout, os.Stderr).Execute()
+func Execute(version string) error {
+	return NewRootCommand(os.Stdout, os.Stderr, version).Execute()
 }
 
 // NewRootCommand creates the Cobra root command with subcommands.
-func NewRootCommand(stdout, stderr io.Writer) *cobra.Command {
-	return newRootCommandWithDependencies(stdout, stderr, ddsync.ResolveLatestStableTag, ddsync.SyncSnapshotFromUpstream)
+func NewRootCommand(stdout, stderr io.Writer, version string) *cobra.Command {
+	return newRootCommandWithDependencies(
+		stdout,
+		stderr,
+		version,
+		ddsync.ResolveLatestStableTag,
+		ddsync.SyncSnapshotFromUpstream,
+	)
 }
 
 func newRootCommandWithDependencies(
 	stdout, stderr io.Writer,
+	version string,
 	resolver func(string) (string, error),
 	syncSnapshot func(ddsync.Config) error,
 ) *cobra.Command {
-	opts := &rootOptions{}
-	opts.resolveUpstreamTag = resolver
-	opts.syncSnapshot = syncSnapshot
+	opts := &rootOptions{
+		version:            strings.TrimSpace(version),
+		resolveUpstreamTag: resolver,
+		syncSnapshot:       syncSnapshot,
+	}
+	if opts.version == "" {
+		opts.version = "dev"
+	}
 
 	cmd := &cobra.Command{
 		Use:           "ddsync",
@@ -74,7 +91,7 @@ func newRootCommandWithDependencies(
 		newUpdateCommand(opts),
 		newVerifyCommand(opts),
 		newStatusCommand(opts),
-		newVersionCommand(),
+		newVersionCommand(opts),
 		newCompletionCommand(cmd),
 	)
 
@@ -89,10 +106,10 @@ func (o *rootOptions) config() (ddsync.Config, error) {
 		ManifestPath: strings.TrimSpace(o.manifest),
 	}
 	if cfg.UpstreamRepo == "" {
-		return ddsync.Config{}, fmt.Errorf("--upstream-repo must not be empty")
+		return ddsync.Config{}, errEmptyUpstreamRepo
 	}
 	if o.resolveUpstreamTag == nil {
-		return ddsync.Config{}, fmt.Errorf("upstream resolver is not configured")
+		return ddsync.Config{}, errUpstreamResolverNotDefined
 	}
 
 	upstreamVersion, err := o.resolveUpstreamTag(cfg.UpstreamRepo)
@@ -101,4 +118,11 @@ func (o *rootOptions) config() (ddsync.Config, error) {
 	}
 	cfg.UpstreamVersion = strings.TrimSpace(upstreamVersion)
 	return cfg, nil
+}
+
+func (o *rootOptions) writeOutput(cmd *cobra.Command, payload any, text string) error {
+	if o.jsonOutput {
+		return writeJSONOutput(cmd, payload)
+	}
+	return writeTextOutput(cmd, text)
 }

@@ -1,4 +1,4 @@
-package ddcmd
+package cmd
 
 import (
 	"crypto/sha256"
@@ -9,6 +9,13 @@ import (
 	"path/filepath"
 
 	"github.com/metalagman/ddgo/internal/ddsync"
+)
+
+const (
+	provenanceIssueCapacity = 6
+	sourceIssueCapacity     = 2
+	provenanceDirPerm       = 0o750
+	provenanceFilePerm      = 0o600
 )
 
 type provenance struct {
@@ -68,53 +75,34 @@ func updateProvenance(cfg ddsync.Config, provenancePath string) error {
 		},
 	}
 
-	payload, err := json.MarshalIndent(p, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal provenance: %w", err)
-	}
+	payload, _ := json.MarshalIndent(p, "", "  ")
 	payload = append(payload, '\n')
 
-	if err := os.MkdirAll(filepath.Dir(provenancePath), 0o755); err != nil {
+	err = os.MkdirAll(filepath.Dir(provenancePath), provenanceDirPerm)
+	if err != nil {
 		return fmt.Errorf("mkdir provenance dir: %w", err)
 	}
-	if err := os.WriteFile(provenancePath, payload, 0o644); err != nil {
+	err = os.WriteFile(provenancePath, payload, provenanceFilePerm)
+	if err != nil {
 		return fmt.Errorf("write provenance: %w", err)
 	}
 	return nil
 }
 
 func provenanceIssues(cfg ddsync.Config, provenancePath string) ([]string, error) {
-	raw, err := os.ReadFile(provenancePath)
+	raw, err := os.ReadFile(filepath.Clean(provenancePath))
 	if err != nil {
 		return nil, fmt.Errorf("read provenance: %w", err)
 	}
 
 	var p provenance
-	if err := json.Unmarshal(raw, &p); err != nil {
+	err = json.Unmarshal(raw, &p)
+	if err != nil {
 		return nil, fmt.Errorf("decode provenance: %w", err)
 	}
 
-	issues := make([]string, 0, 6)
-
-	var src *provenanceSource
-	for i := range p.Sources {
-		if p.Sources[i].Name == cfg.UpstreamRepo {
-			src = &p.Sources[i]
-			break
-		}
-	}
-	if src == nil {
-		issues = append(issues, fmt.Sprintf("provenance missing source entry for upstream repo %q", cfg.UpstreamRepo))
-	} else {
-		if src.UpstreamVersion == "" {
-			issues = append(issues, "provenance missing upstream version metadata")
-		} else if src.UpstreamVersion != cfg.UpstreamVersion {
-			issues = append(issues, fmt.Sprintf("provenance upstream version mismatch: want %q got %q", cfg.UpstreamVersion, src.UpstreamVersion))
-		}
-		if src.SnapshotDir != normalizePath(cfg.SnapshotDir) {
-			issues = append(issues, fmt.Sprintf("provenance snapshot dir mismatch: want %q got %q", normalizePath(cfg.SnapshotDir), src.SnapshotDir))
-		}
-	}
+	issues := make([]string, 0, provenanceIssueCapacity)
+	issues = append(issues, sourceIssues(p.Sources, cfg)...)
 
 	outputPath := normalizePath(cfg.OutputPath)
 	manifestPath := normalizePath(cfg.ManifestPath)
@@ -127,13 +115,7 @@ func provenanceIssues(cfg ddsync.Config, provenancePath string) ([]string, error
 		return nil, fmt.Errorf("hash manifest: %w", err)
 	}
 
-	var artifact *provenanceArtifact
-	for i := range p.Artifacts {
-		if p.Artifacts[i].Path == outputPath && p.Artifacts[i].ManifestPath == manifestPath {
-			artifact = &p.Artifacts[i]
-			break
-		}
-	}
+	artifact := findProvenanceArtifact(p.Artifacts, outputPath, manifestPath)
 	if artifact == nil {
 		issues = append(issues, fmt.Sprintf("provenance missing artifact entry for %q", outputPath))
 		return issues, nil
@@ -149,8 +131,61 @@ func provenanceIssues(cfg ddsync.Config, provenancePath string) ([]string, error
 	return issues, nil
 }
 
+func sourceIssues(sources []provenanceSource, cfg ddsync.Config) []string {
+	src := findProvenanceSource(sources, cfg.UpstreamRepo)
+	if src == nil {
+		return []string{
+			fmt.Sprintf("provenance missing source entry for upstream repo %q", cfg.UpstreamRepo),
+		}
+	}
+
+	issues := make([]string, 0, sourceIssueCapacity)
+	if src.UpstreamVersion == "" {
+		issues = append(issues, "provenance missing upstream version metadata")
+	} else if src.UpstreamVersion != cfg.UpstreamVersion {
+		issues = append(
+			issues,
+			fmt.Sprintf(
+				"provenance upstream version mismatch: want %q got %q",
+				cfg.UpstreamVersion,
+				src.UpstreamVersion,
+			),
+		)
+	}
+	expectedSnapshotDir := normalizePath(cfg.SnapshotDir)
+	if src.SnapshotDir != expectedSnapshotDir {
+		issues = append(
+			issues,
+			fmt.Sprintf(
+				"provenance snapshot dir mismatch: want %q got %q",
+				expectedSnapshotDir,
+				src.SnapshotDir,
+			),
+		)
+	}
+	return issues
+}
+
+func findProvenanceSource(sources []provenanceSource, name string) *provenanceSource {
+	for i := range sources {
+		if sources[i].Name == name {
+			return &sources[i]
+		}
+	}
+	return nil
+}
+
+func findProvenanceArtifact(artifacts []provenanceArtifact, outputPath, manifestPath string) *provenanceArtifact {
+	for i := range artifacts {
+		if artifacts[i].Path == outputPath && artifacts[i].ManifestPath == manifestPath {
+			return &artifacts[i]
+		}
+	}
+	return nil
+}
+
 func fileSHA256(path string) (string, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return "", err
 	}

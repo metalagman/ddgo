@@ -1,16 +1,34 @@
 package ddsync
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/storage/memory"
 )
 
 const upstreamResolveTimeout = 15 * time.Second
+
+const (
+	stableSemverParts         = 3
+	minRemoteRefParts         = 2
+	supportedUpstreamRepoSlug = "matomo-org/device-detector"
+)
+
+var (
+	errUpstreamRepoRequired = errors.New("upstream repo is required")
+	errResolveTagsTimedOut  = errors.New("resolve upstream tags timed out")
+	errNoStableTags         = errors.New("no stable semver tags found in upstream")
+	errUnsupportedRepo      = errors.New("unsupported upstream repo")
+	reGitHubRepoSlug        = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+)
 
 type stableSemver struct {
 	major int
@@ -20,30 +38,19 @@ type stableSemver struct {
 
 // ResolveLatestStableTag returns the highest stable semver tag from upstream.
 func ResolveLatestStableTag(upstreamRepo string) (string, error) {
-	upstreamRepo = strings.TrimSpace(upstreamRepo)
-	if upstreamRepo == "" {
-		return "", fmt.Errorf("upstream repo is required")
+	_, err := sanitizeGitHubRepoSlug(upstreamRepo)
+	if err != nil {
+		return "", err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), upstreamResolveTimeout)
 	defer cancel()
 
-	repoURL := upstreamRepoURL(upstreamRepo)
-	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--tags", "--refs", repoURL)
-	output, err := cmd.CombinedOutput()
-	if ctx.Err() == context.DeadlineExceeded {
-		return "", fmt.Errorf("git ls-remote timed out")
-	}
+	tag, err := latestStableTagFromUpstream(ctx)
 	if err != nil {
-		msg := strings.TrimSpace(string(output))
-		if msg == "" {
-			msg = err.Error()
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return "", errResolveTagsTimedOut
 		}
-		return "", fmt.Errorf("git ls-remote failed: %s", msg)
-	}
-
-	tag, err := latestStableTagFromRemote(output)
-	if err != nil {
 		return "", err
 	}
 	return tag, nil
@@ -53,6 +60,45 @@ func upstreamRepoURL(upstreamRepo string) string {
 	return "https://github.com/" + strings.TrimSuffix(strings.TrimSpace(upstreamRepo), ".git") + ".git"
 }
 
+func latestStableTagFromUpstream(ctx context.Context) (string, error) {
+	remote := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{upstreamRepoURL(supportedUpstreamRepoSlug)},
+	})
+
+	refs, err := remote.ListContext(ctx, &git.ListOptions{})
+	if err != nil {
+		return "", fmt.Errorf("list upstream refs: %w", err)
+	}
+
+	var refsOutput strings.Builder
+	for _, ref := range refs {
+		if !ref.Name().IsTag() {
+			continue
+		}
+		refsOutput.WriteString(ref.Hash().String())
+		refsOutput.WriteByte('\t')
+		refsOutput.WriteString(ref.Name().String())
+		refsOutput.WriteByte('\n')
+	}
+
+	return latestStableTagFromRemote([]byte(refsOutput.String()))
+}
+
+func sanitizeGitHubRepoSlug(upstreamRepo string) (string, error) {
+	repoSlug := strings.TrimSuffix(strings.TrimSpace(upstreamRepo), ".git")
+	if repoSlug == "" {
+		return "", errUpstreamRepoRequired
+	}
+	if !reGitHubRepoSlug.MatchString(repoSlug) {
+		return "", errUnsupportedRepo
+	}
+	if repoSlug != supportedUpstreamRepoSlug {
+		return "", fmt.Errorf("%w: %q", errUnsupportedRepo, repoSlug)
+	}
+	return repoSlug, nil
+}
+
 func latestStableTagFromRemote(output []byte) (string, error) {
 	var (
 		bestTag string
@@ -60,15 +106,14 @@ func latestStableTagFromRemote(output []byte) (string, error) {
 		found   bool
 	)
 
-	lines := bytes.Split(output, []byte{'\n'})
-	for _, rawLine := range lines {
-		line := strings.TrimSpace(string(rawLine))
+	for line := range strings.SplitSeq(string(output), "\n") {
+		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
 
 		parts := strings.Fields(line)
-		if len(parts) < 2 {
+		if len(parts) < minRemoteRefParts {
 			continue
 		}
 		ref := parts[1]
@@ -89,7 +134,7 @@ func latestStableTagFromRemote(output []byte) (string, error) {
 	}
 
 	if !found {
-		return "", fmt.Errorf("no stable semver tags found in upstream")
+		return "", errNoStableTags
 	}
 	return bestTag, nil
 }
@@ -106,7 +151,7 @@ func parseStableSemver(tag string) (stableSemver, bool) {
 	}
 
 	parts := strings.Split(noPrefix, ".")
-	if len(parts) != 3 {
+	if len(parts) != stableSemverParts {
 		return stableSemver{}, false
 	}
 

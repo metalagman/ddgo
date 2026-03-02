@@ -1,13 +1,16 @@
-package ddcmd
+package cmd
 
 import (
 	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/metalagman/ddgo/internal/ddsync"
 	"github.com/spf13/cobra"
+
+	"github.com/metalagman/ddgo/internal/ddsync"
 )
+
+var errVerifyFailed = errors.New("verify failed")
 
 func newVerifyCommand(opts *rootOptions) *cobra.Command {
 	return &cobra.Command{
@@ -35,16 +38,16 @@ func newVerifyCommand(opts *rootOptions) *cobra.Command {
 			if len(issues) > 0 {
 				issues = normalizeIssues(issues)
 				if opts.jsonOutput {
-					_ = writeOutput(cmd, true, verifyResult{
+					_ = writeJSONOutput(cmd, verifyResult{
 						Operation: "verify",
 						Clean:     false,
 						Issues:    issues,
-					}, "")
+					})
 				}
-				return errors.New(strings.Join(issues, "; "))
+				return fmt.Errorf("%w: %s", errVerifyFailed, strings.Join(issues, "; "))
 			}
 
-			return writeOutput(cmd, opts.jsonOutput, verifyResult{
+			return opts.writeOutput(cmd, verifyResult{
 				Operation: "verify",
 				Clean:     true,
 			}, "verify: clean")

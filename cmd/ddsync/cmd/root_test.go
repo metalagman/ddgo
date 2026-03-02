@@ -1,4 +1,4 @@
-package ddcmd
+package cmd
 
 import (
 	"bytes"
@@ -215,6 +215,7 @@ func TestUpdateFailsWhenSnapshotSyncFails(t *testing.T) {
 	root := newRootCommandWithDependencies(
 		&out,
 		&stderr,
+		testResolvedUpstreamVersion,
 		func(string) (string, error) { return testResolvedUpstreamVersion, nil },
 		func(ddsync.Config) error { return fmt.Errorf("snapshot sync failed") },
 	)
@@ -278,11 +279,7 @@ func TestRemovedVersionFlagsRejected(t *testing.T) {
 func TestVersionAndCompletion(t *testing.T) {
 	t.Parallel()
 
-	prev := BuildVersion
-	BuildVersion = "test-version"
-	t.Cleanup(func() { BuildVersion = prev })
-
-	out, _, err := execCommand(t, "version")
+	out, _, err := execCommandWithVersion(t, "test-version", "version")
 	if err != nil {
 		t.Fatalf("version failed: %v", err)
 	}
@@ -323,11 +320,31 @@ func execCommand(t *testing.T, args ...string) (string, string, error) {
 }
 
 func execCommandWithResolver(t *testing.T, resolver func(string) (string, error), args ...string) (string, string, error) {
+	return execCommandWithVersionAndResolver(t, "dev", resolver, args...)
+}
+
+func execCommandWithVersion(
+	t *testing.T,
+	version string,
+	args ...string,
+) (string, string, error) {
+	t.Helper()
+	return execCommandWithVersionAndResolver(t, version, func(string) (string, error) {
+		return testResolvedUpstreamVersion, nil
+	}, args...)
+}
+
+func execCommandWithVersionAndResolver(
+	t *testing.T,
+	version string,
+	resolver func(string) (string, error),
+	args ...string,
+) (string, string, error) {
 	t.Helper()
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
-	root := newRootCommandWithDependencies(&out, &stderr, resolver, func(ddsync.Config) error { return nil })
+	root := newRootCommandWithDependencies(&out, &stderr, version, resolver, func(ddsync.Config) error { return nil })
 	root.SetArgs(args)
 	_, err := root.ExecuteC()
 	return out.String(), stderr.String(), err

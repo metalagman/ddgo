@@ -1,9 +1,9 @@
 package ddgo
 
 import (
+	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/dlclark/regexp2"
 	"gopkg.in/yaml.v3"
@@ -28,66 +28,48 @@ type botRule struct {
 	producer Producer
 }
 
-var (
-	botRulesOnce sync.Once
-	botRules     []botRule
-	botRulesErr  error
-)
+var errBotsSnapshotMissing = errors.New("compiled snapshot missing bots.yml")
 
-func loadBotRules() ([]botRule, error) {
-	botRulesOnce.Do(func() {
-		files, err := loadSnapshotFiles()
-		if err != nil {
-			botRulesErr = err
-			return
-		}
-		content, ok := files["bots.yml"]
-		if !ok {
-			botRulesErr = fmt.Errorf("compiled snapshot missing bots.yml")
-			return
-		}
-
-		var yamlRules []botYAMLRule
-		if err := yaml.Unmarshal([]byte(content), &yamlRules); err != nil {
-			botRulesErr = fmt.Errorf("decode bots.yml: %w", err)
-			return
-		}
-
-		compiled := make([]botRule, 0, len(yamlRules))
-		for _, item := range yamlRules {
-			if item.Regex == "" {
-				continue
-			}
-			re, err := compileRuleRegex(item.Regex)
-			if err != nil {
-				botRulesErr = fmt.Errorf("compile bots.yml regex %q: %w", item.Regex, err)
-				return
-			}
-
-			compiled = append(compiled, botRule{
-				pattern:  re,
-				name:     defaultString(item.Name, Unknown),
-				category: defaultString(item.Category, Unknown),
-				url:      defaultString(item.URL, Unknown),
-				producer: Producer{
-					Name: defaultString(item.Producer.Name, Unknown),
-					URL:  defaultString(item.Producer.URL, Unknown),
-				},
-			})
-		}
-		botRules = compiled
-	})
-
-	if botRulesErr != nil {
-		return nil, botRulesErr
+func loadBotRules(files map[string]string) ([]botRule, error) {
+	content, ok := files["bots.yml"]
+	if !ok {
+		return nil, errBotsSnapshotMissing
 	}
-	return botRules, nil
+
+	var yamlRules []botYAMLRule
+	err := yaml.Unmarshal([]byte(content), &yamlRules)
+	if err != nil {
+		return nil, fmt.Errorf("decode bots.yml: %w", err)
+	}
+
+	compiled := make([]botRule, 0, len(yamlRules))
+	for _, item := range yamlRules {
+		if item.Regex == "" {
+			continue
+		}
+		re, compileErr := compileRuleRegex(item.Regex)
+		if compileErr != nil {
+			return nil, fmt.Errorf("compile bots.yml regex %q: %w", item.Regex, compileErr)
+		}
+
+		compiled = append(compiled, botRule{
+			pattern:  re,
+			name:     normalizeUnknownString(item.Name),
+			category: normalizeUnknownString(item.Category),
+			url:      normalizeUnknownString(item.URL),
+			producer: Producer{
+				Name: normalizeUnknownString(item.Producer.Name),
+				URL:  normalizeUnknownString(item.Producer.URL),
+			},
+		})
+	}
+	return compiled, nil
 }
 
-func defaultString(value, fallback string) string {
+func normalizeUnknownString(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
-		return fallback
+		return Unknown
 	}
 	return value
 }

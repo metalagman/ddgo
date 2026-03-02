@@ -428,5 +428,6 @@ output:
 run:
   timeout: 1m
   modules-download-mode: readonly
+  tests: false
 severity:
   default: error

@@ -25,7 +25,7 @@ type cacheEntry struct {
 	result Result
 }
 
-func newResultCache(capacity int) ResultCache {
+func newResultCache(capacity int) *lruResultCache {
 	cache := newLRUResultCache(capacity)
 	if cache == nil {
 		return nil
@@ -82,22 +82,21 @@ func (c *lruResultCache) Set(key string, result Result) {
 	c.order.Remove(tail)
 }
 
-// NewMemoryResultCache returns a simple unbounded in-memory cache implementation.
-//
-// Use this with WithResultCache when you want custom cache behavior without LRU
-// eviction logic.
-func NewMemoryResultCache() ResultCache {
-	return &memoryResultCache{
-		entries: make(map[string]Result),
-	}
-}
-
-type memoryResultCache struct {
+// MemoryResultCache is a simple unbounded in-memory cache implementation.
+type MemoryResultCache struct {
 	mu      sync.RWMutex
 	entries map[string]Result
 }
 
-func (c *memoryResultCache) Get(key string) (Result, bool) {
+// NewMemoryResultCache creates an unbounded in-memory cache.
+func NewMemoryResultCache() *MemoryResultCache {
+	return &MemoryResultCache{
+		entries: make(map[string]Result),
+	}
+}
+
+// Get returns a cached result for key.
+func (c *MemoryResultCache) Get(key string) (Result, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -105,7 +104,8 @@ func (c *memoryResultCache) Get(key string) (Result, bool) {
 	return result, ok
 }
 
-func (c *memoryResultCache) Set(key string, result Result) {
+// Set stores a cached result for key.
+func (c *MemoryResultCache) Set(key string, result Result) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

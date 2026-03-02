@@ -1,7 +1,9 @@
 package ddgo
 
-const defaultMaxUserAgentLen = 2048
-const defaultResultCacheSize = 256
+const (
+	defaultMaxUserAgentLen = 2048
+	defaultResultCacheSize = 256
+)
 
 type options struct {
 	maxUserAgentLen int
@@ -24,12 +26,12 @@ func defaultOptions() options {
 
 // WithMaxUserAgentLen limits how many bytes of a user-agent string are parsed.
 // Values below 1 are ignored.
-func WithMaxUserAgentLen(max int) Option {
+func WithMaxUserAgentLen(limit int) Option {
 	return func(cfg *options) {
-		if max < 1 {
+		if limit < 1 {
 			return
 		}
-		cfg.maxUserAgentLen = max
+		cfg.maxUserAgentLen = limit
 	}
 }
 

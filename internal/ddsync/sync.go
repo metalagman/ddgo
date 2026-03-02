@@ -10,8 +10,23 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
+)
+
+var (
+	errUpstreamVersionRequired      = errors.New("upstream version is required")
+	errUpstreamRepoRequiredWithVer  = errors.New("upstream repo is required when upstream version is set")
+	errSnapshotDirRequired          = errors.New("snapshot dir is required")
+	errOutputPathRequired           = errors.New("output path is required")
+	errManifestPathRequired         = errors.New("manifest path is required")
+	errSnapshotVerificationFailed   = errors.New("snapshot verification failed")
+	errManifestValidationConfigHint = errors.New("manifest status validation failed")
+)
+
+const (
+	directoryPerm = 0o750
+	filePerm      = 0o600
 )
 
 // Config controls input/output locations for the sync pipeline.
@@ -60,7 +75,8 @@ type StatusReport struct {
 
 // Update compiles snapshot inputs into deterministic output + manifest.
 func Update(cfg Config) (Manifest, error) {
-	if err := validateConfig(cfg, true); err != nil {
+	err := validateConfigForUpdate(cfg)
+	if err != nil {
 		return Manifest{}, err
 	}
 
@@ -76,7 +92,8 @@ func Update(cfg Config) (Manifest, error) {
 	if err != nil {
 		return Manifest{}, fmt.Errorf("marshal compiled snapshot: %w", err)
 	}
-	if err := writeFile(cfg.OutputPath, compiledBytes); err != nil {
+	err = writeFile(cfg.OutputPath, compiledBytes)
+	if err != nil {
 		return Manifest{}, err
 	}
 
@@ -92,7 +109,8 @@ func Update(cfg Config) (Manifest, error) {
 	if err != nil {
 		return Manifest{}, fmt.Errorf("marshal manifest: %w", err)
 	}
-	if err := writeFile(cfg.ManifestPath, manifestBytes); err != nil {
+	err = writeFile(cfg.ManifestPath, manifestBytes)
+	if err != nil {
 		return Manifest{}, err
 	}
 
@@ -101,7 +119,8 @@ func Update(cfg Config) (Manifest, error) {
 
 // Verify validates snapshot sources and output against the manifest.
 func Verify(cfg Config) error {
-	if err := validateConfig(cfg, true); err != nil {
+	err := validateConfigForUpdate(cfg)
+	if err != nil {
 		return err
 	}
 
@@ -112,12 +131,13 @@ func Verify(cfg Config) error {
 	if report.Clean {
 		return nil
 	}
-	return errors.New(strings.Join(report.Issues, "; "))
+	return fmt.Errorf("%w: %s", errSnapshotVerificationFailed, strings.Join(report.Issues, "; "))
 }
 
 // Status checks whether current files match manifest expectations.
 func Status(cfg Config) (StatusReport, error) {
-	if err := validateConfig(cfg, false); err != nil {
+	err := validateConfigForStatus(cfg)
+	if err != nil {
 		return StatusReport{}, err
 	}
 
@@ -127,7 +147,8 @@ func Status(cfg Config) (StatusReport, error) {
 	}
 
 	var manifest Manifest
-	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+	err = json.Unmarshal(manifestBytes, &manifest)
+	if err != nil {
 		return StatusReport{}, fmt.Errorf("decode manifest: %w", err)
 	}
 
@@ -171,21 +192,29 @@ func Status(cfg Config) (StatusReport, error) {
 	}, nil
 }
 
-func validateConfig(cfg Config, requireUpstream bool) error {
-	if requireUpstream && cfg.UpstreamVersion == "" {
-		return errors.New("upstream version is required")
+func validateConfigForUpdate(cfg Config) error {
+	err := validateConfigForStatus(cfg)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errManifestValidationConfigHint, err)
 	}
+	if cfg.UpstreamVersion == "" {
+		return errUpstreamVersionRequired
+	}
+	return nil
+}
+
+func validateConfigForStatus(cfg Config) error {
 	if cfg.UpstreamVersion != "" && cfg.UpstreamRepo == "" {
-		return errors.New("upstream repo is required when upstream version is set")
+		return errUpstreamRepoRequiredWithVer
 	}
 	if cfg.SnapshotDir == "" {
-		return errors.New("snapshot dir is required")
+		return errSnapshotDirRequired
 	}
 	if cfg.OutputPath == "" {
-		return errors.New("output path is required")
+		return errOutputPathRequired
 	}
 	if cfg.ManifestPath == "" {
-		return errors.New("manifest path is required")
+		return errManifestPathRequired
 	}
 	return nil
 }
@@ -212,13 +241,13 @@ func readSnapshot(snapshotDir string) ([]SourceFile, []CompiledFile, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("walk snapshot: %w", err)
 	}
-	sort.Strings(paths)
+	slices.Sort(paths)
 
 	sourceFiles := make([]SourceFile, 0, len(paths))
 	compiledFiles := make([]CompiledFile, 0, len(paths))
 	for _, relPath := range paths {
 		absPath := filepath.Join(snapshotDir, filepath.FromSlash(relPath))
-		data, err := os.ReadFile(absPath)
+		data, err := os.ReadFile(filepath.Clean(absPath))
 		if err != nil {
 			return nil, nil, fmt.Errorf("read %s: %w", relPath, err)
 		}
@@ -240,10 +269,12 @@ func readSnapshot(snapshotDir string) ([]SourceFile, []CompiledFile, error) {
 
 func writeFile(path string, data []byte) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	err := os.MkdirAll(dir, directoryPerm)
+	if err != nil {
 		return fmt.Errorf("mkdir %s: %w", dir, err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	err = os.WriteFile(path, data, filePerm)
+	if err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
 	return nil

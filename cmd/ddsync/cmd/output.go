@@ -1,12 +1,13 @@
-package ddcmd
+package cmd
 
 import (
 	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/metalagman/ddgo/internal/ddsync"
 	"github.com/spf13/cobra"
+
+	"github.com/metalagman/ddgo/internal/ddsync"
 )
 
 type updateResult struct {
@@ -30,12 +31,13 @@ type statusResult struct {
 	Issues    []string `json:"issues,omitempty"`
 }
 
-func writeOutput(cmd *cobra.Command, jsonOutput bool, payload any, text string) error {
-	if jsonOutput {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(payload)
-	}
+func writeJSONOutput(cmd *cobra.Command, payload any) error {
+	enc := json.NewEncoder(cmd.OutOrStdout())
+	enc.SetIndent("", "  ")
+	return enc.Encode(payload)
+}
+
+func writeTextOutput(cmd *cobra.Command, text string) error {
 	_, err := fmt.Fprintln(cmd.OutOrStdout(), text)
 	return err
 }

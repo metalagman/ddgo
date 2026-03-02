@@ -1,11 +1,15 @@
-package ddcmd
+package cmd
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/metalagman/ddgo/internal/ddsync"
 	"github.com/spf13/cobra"
+
+	"github.com/metalagman/ddgo/internal/ddsync"
 )
+
+var errSnapshotSyncNotConfigured = errors.New("snapshot sync is not configured")
 
 func newUpdateCommand(opts *rootOptions) *cobra.Command {
 	return &cobra.Command{
@@ -17,9 +21,10 @@ func newUpdateCommand(opts *rootOptions) *cobra.Command {
 				return err
 			}
 			if opts.syncSnapshot == nil {
-				return fmt.Errorf("snapshot sync is not configured")
+				return errSnapshotSyncNotConfigured
 			}
-			if err := opts.syncSnapshot(cfg); err != nil {
+			err = opts.syncSnapshot(cfg)
+			if err != nil {
 				return err
 			}
 
@@ -27,7 +32,8 @@ func newUpdateCommand(opts *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := updateProvenance(cfg, opts.provenancePath); err != nil {
+			err = updateProvenance(cfg, opts.provenancePath)
+			if err != nil {
 				return err
 			}
 			payload := updateResult{
@@ -44,7 +50,7 @@ func newUpdateCommand(opts *rootOptions) *cobra.Command {
 				manifest.UpstreamVersion,
 				len(manifest.SourceFiles),
 			)
-			return writeOutput(cmd, opts.jsonOutput, payload, text)
+			return opts.writeOutput(cmd, payload, text)
 		},
 	}
 }

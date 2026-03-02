@@ -1,2 +1,2 @@
-// Package ddcmd provides the Cobra command tree for the ddsync CLI.
-package ddcmd
+// Package cmd provides the Cobra command tree for the ddsync CLI.
+package cmd

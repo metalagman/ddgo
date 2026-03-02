@@ -2,24 +2,46 @@ package ddgo
 
 import "fmt"
 
-func initParserRuntime() error {
-	if _, err := loadSnapshotFiles(); err != nil {
-		return fmt.Errorf("load snapshot files: %w", err)
+type parserRuntime struct {
+	botRules      []botRule
+	clientRules   []clientRuleSet
+	clientEngines []clientEngineRule
+	osRules       []osRule
+	deviceRules   []deviceRule
+}
+
+func newParserRuntime() (*parserRuntime, error) {
+	files, err := loadSnapshotFiles()
+	if err != nil {
+		return nil, fmt.Errorf("load snapshot files: %w", err)
 	}
-	if _, err := loadBotRules(); err != nil {
-		return fmt.Errorf("load bot rules: %w", err)
+
+	botRules, err := loadBotRules(files)
+	if err != nil {
+		return nil, fmt.Errorf("load bot rules: %w", err)
 	}
-	if _, err := loadClientRules(); err != nil {
-		return fmt.Errorf("load client rules: %w", err)
+	clientRules, err := loadClientRules(files)
+	if err != nil {
+		return nil, fmt.Errorf("load client rules: %w", err)
 	}
-	if _, err := loadClientEngineRules(); err != nil {
-		return fmt.Errorf("load client engine rules: %w", err)
+	clientEngineRules, err := loadClientEngineRules(files)
+	if err != nil {
+		return nil, fmt.Errorf("load client engine rules: %w", err)
 	}
-	if _, err := loadOSRules(); err != nil {
-		return fmt.Errorf("load os rules: %w", err)
+	osRules, err := loadOSRules(files)
+	if err != nil {
+		return nil, fmt.Errorf("load os rules: %w", err)
 	}
-	if _, err := loadDeviceRules(); err != nil {
-		return fmt.Errorf("load device rules: %w", err)
+	deviceRules, err := loadDeviceRules(files)
+	if err != nil {
+		return nil, fmt.Errorf("load device rules: %w", err)
 	}
-	return nil
+
+	return &parserRuntime{
+		botRules:      botRules,
+		clientRules:   clientRules,
+		clientEngines: clientEngineRules,
+		osRules:       osRules,
+		deviceRules:   deviceRules,
+	}, nil
 }

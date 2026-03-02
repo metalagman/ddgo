@@ -1,10 +1,11 @@
-package ddcmd
+package cmd
 
 import (
 	"fmt"
 
-	"github.com/metalagman/ddgo/internal/ddsync"
 	"github.com/spf13/cobra"
+
+	"github.com/metalagman/ddgo/internal/ddsync"
 )
 
 func newStatusCommand(opts *rootOptions) *cobra.Command {
@@ -31,7 +32,7 @@ func newStatusCommand(opts *rootOptions) *cobra.Command {
 			report.Issues = normalizeIssues(report.Issues)
 			report.Clean = len(report.Issues) == 0
 
-			return writeOutput(cmd, opts.jsonOutput, statusResult{
+			return opts.writeOutput(cmd, statusResult{
 				Operation: "status",
 				Clean:     report.Clean,
 				Issues:    report.Issues,

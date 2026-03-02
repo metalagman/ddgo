@@ -1,6 +1,7 @@
 package ddgo
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -10,14 +11,22 @@ import (
 	"github.com/dlclark/regexp2"
 )
 
-var reTemplateGroup = regexp.MustCompile(`\$(\d+)`)
+var (
+	reTemplateGroup         = regexp.MustCompile(`\$(\d+)`)
+	errCompiledSnapshotMiss = errors.New("compiled snapshot missing file")
+)
+
+const (
+	regexpMatchTimeout       = 100 * time.Millisecond
+	templateSubmatchExpected = 2
+)
 
 func compileRuleRegex(pattern string) (*regexp2.Regexp, error) {
 	re, err := regexp2.Compile(normalizeRulePattern(pattern), 0)
 	if err != nil {
 		return nil, err
 	}
-	re.MatchTimeout = 100 * time.Millisecond
+	re.MatchTimeout = regexpMatchTimeout
 	return re, nil
 }
 
@@ -31,7 +40,7 @@ func expandRuleTemplate(template string, match *regexp2.Match) string {
 	}
 	expanded := reTemplateGroup.ReplaceAllStringFunc(template, func(token string) string {
 		raw := reTemplateGroup.FindStringSubmatch(token)
-		if len(raw) != 2 {
+		if len(raw) != templateSubmatchExpected {
 			return ""
 		}
 		groupIndex, err := strconv.Atoi(raw[1])
@@ -89,5 +98,5 @@ func isRegexp2MatchTimeout(err error) bool {
 }
 
 func missingSnapshotFileError(path string) error {
-	return fmt.Errorf("compiled snapshot missing %s", path)
+	return fmt.Errorf("%w: %s", errCompiledSnapshotMiss, path)
 }

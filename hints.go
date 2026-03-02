@@ -7,6 +7,24 @@ import (
 
 var reClientHintBrand = regexp.MustCompile(`"([^"]+)"\s*;\s*v="([^"]+)"`)
 
+const (
+	clientHintBrandMatchGroups = 3
+	priorityEdge               = 100
+	priorityOpera              = 90
+	priorityChrome             = 80
+	priorityChromium           = 70
+	priorityFirefox            = 60
+	prioritySafari             = 50
+	osNameWindows              = "Windows"
+	osNameAndroid              = "Android"
+	osNameIOS                  = "iOS"
+	osNameMacOS                = "macOS"
+	osNameLinux                = "Linux"
+	osNameChromeOS             = "Chrome OS"
+	platformARM                = "ARM"
+	platformX64                = "x64"
+)
+
 // ClientHintBrand represents one structured brand entry from Sec-CH-UA.
 type ClientHintBrand struct {
 	Name    string
@@ -108,7 +126,7 @@ func parseClientHintBrands(raw string) []ClientHintBrand {
 	}
 	brands := make([]ClientHintBrand, 0, len(matches))
 	for _, match := range matches {
-		if len(match) < 3 {
+		if len(match) < clientHintBrandMatchGroups {
 			continue
 		}
 		brand := normalizeClientHintToken(match[1])
@@ -124,7 +142,7 @@ func parseClientHintBrands(raw string) []ClientHintBrand {
 	return brands
 }
 
-func parseClientHintMobile(raw string) (bool, bool) {
+func parseClientHintMobile(raw string) (mobile bool, ok bool) {
 	switch strings.TrimSpace(raw) {
 	case "?1", "\"?1\"", "1", "true":
 		return true, true
@@ -175,17 +193,17 @@ func pickClientBrand(brands []ClientHintBrand) (ClientHintBrand, bool) {
 func profileForBrand(brand string) (clientProfile, bool) {
 	switch strings.ToLower(strings.TrimSpace(brand)) {
 	case "microsoft edge", "edge":
-		return clientProfile{Name: "Microsoft Edge", ClientType: "Browser", Engine: "Blink", Priority: 100}, true
+		return clientProfile{Name: "Microsoft Edge", ClientType: "Browser", Engine: "Blink", Priority: priorityEdge}, true
 	case "opera":
-		return clientProfile{Name: "Opera", ClientType: "Browser", Engine: "Blink", Priority: 90}, true
+		return clientProfile{Name: "Opera", ClientType: "Browser", Engine: "Blink", Priority: priorityOpera}, true
 	case "google chrome", "chrome":
-		return clientProfile{Name: "Chrome", ClientType: "Browser", Engine: "Blink", Priority: 80}, true
+		return clientProfile{Name: "Chrome", ClientType: "Browser", Engine: "Blink", Priority: priorityChrome}, true
 	case "chromium":
-		return clientProfile{Name: "Chrome", ClientType: "Browser", Engine: "Blink", Priority: 70}, true
+		return clientProfile{Name: "Chrome", ClientType: "Browser", Engine: "Blink", Priority: priorityChromium}, true
 	case "mozilla firefox", "firefox":
-		return clientProfile{Name: "Firefox", ClientType: "Browser", Engine: "Gecko", Priority: 60}, true
+		return clientProfile{Name: "Firefox", ClientType: "Browser", Engine: "Gecko", Priority: priorityFirefox}, true
 	case "safari":
-		return clientProfile{Name: "Safari", ClientType: "Browser", Engine: "WebKit", Priority: 50}, true
+		return clientProfile{Name: "Safari", ClientType: "Browser", Engine: "WebKit", Priority: prioritySafari}, true
 	default:
 		return clientProfile{}, false
 	}
@@ -211,17 +229,17 @@ func canonicalClientName(name string) string {
 func canonicalOSName(name string) string {
 	switch strings.ToLower(strings.TrimSpace(name)) {
 	case "windows":
-		return "Windows"
+		return osNameWindows
 	case "android":
-		return "Android"
+		return osNameAndroid
 	case "ios":
-		return "iOS"
+		return osNameIOS
 	case "macos", "mac os", "mac os x":
-		return "macOS"
+		return osNameMacOS
 	case "linux":
-		return "Linux"
+		return osNameLinux
 	case "chrome os", "cros":
-		return "Chrome OS"
+		return osNameChromeOS
 	default:
 		return name
 	}
@@ -229,10 +247,10 @@ func canonicalOSName(name string) string {
 
 func platformForOS(osName string) string {
 	switch osName {
-	case "Android", "iOS":
-		return "ARM"
-	case "Windows", "macOS", "Linux", "Chrome OS":
-		return "x64"
+	case osNameAndroid, osNameIOS:
+		return platformARM
+	case osNameWindows, osNameMacOS, osNameLinux, osNameChromeOS:
+		return platformX64
 	default:
 		return Unknown
 	}
@@ -253,12 +271,12 @@ func normalizeVersion(version string) string {
 func inferDeviceType(mobile *bool, osName string) string {
 	if mobile != nil {
 		if *mobile {
-			return "Smartphone"
+			return deviceTypeSmartphone
 		}
 		switch osName {
-		case "Android", "iOS":
+		case osNameAndroid, osNameIOS:
 			return "Tablet"
-		case "Windows", "macOS", "Linux", "Chrome OS":
+		case osNameWindows, osNameMacOS, osNameLinux, osNameChromeOS:
 			return "Desktop"
 		default:
 			return Unknown
@@ -266,9 +284,9 @@ func inferDeviceType(mobile *bool, osName string) string {
 	}
 
 	switch osName {
-	case "Android", "iOS":
-		return "Smartphone"
-	case "Windows", "macOS", "Linux", "Chrome OS":
+	case osNameAndroid, osNameIOS:
+		return deviceTypeSmartphone
+	case osNameWindows, osNameMacOS, osNameLinux, osNameChromeOS:
 		return "Desktop"
 	default:
 		return Unknown
