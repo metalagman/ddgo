@@ -161,6 +161,10 @@ func (m *myCache) Set(key string, result ddgo.Result) {}
 detector, _ := ddgo.New(ddgo.WithResultCache(&myCache{}))
 ```
 
+## Examples
+
+Runnable examples are in [`example_test.go`](example_test.go) (`Example*` functions).
+
 ## Data source and sync model
 
 - Upstream source: `matomo-org/device-detector` regex definitions.
@@ -174,5 +178,3 @@ detector, _ := ddgo.New(ddgo.WithResultCache(&myCache{}))
 - License and notice references:
   - `LICENSE`
   - `THIRD_PARTY_NOTICES.md`
-
-Runnable examples are in [`example_test.go`](example_test.go) (`Example*` functions).
