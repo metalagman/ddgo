@@ -170,8 +170,9 @@ detector, _ := ddgo.New(ddgo.WithResultCache(&myCache{}))
 
 ## Licensing
 
-- `ddgo` project source code is licensed under MIT.
-- Snapshot-derived upstream data remains under upstream terms (LGPL-3.0-or-later); see:
+- `ddgo` is licensed under LGPL-3.0-or-later (same as Matomo Device Detector).
+- License and provenance references:
+  - `LICENSE`
   - `THIRD_PARTY_NOTICES.md`
   - `licenses/LGPL-3.0-or-later.txt`
   - `compliance/provenance.json`

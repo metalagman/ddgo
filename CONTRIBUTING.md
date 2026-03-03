@@ -47,8 +47,8 @@ UPDATE_GOLDEN=1 go test ./... -run TestParityGoldenFixtures
 
 ## Licensing and provenance
 
-- Project source code is licensed under MIT (see `LICENSE`).
-- Snapshot-derived third-party data is covered by upstream terms and tracked in:
+- Project source code is licensed under LGPL-3.0-or-later (see `LICENSE`).
+- Snapshot-derived third-party data is tracked in:
   - `THIRD_PARTY_NOTICES.md`
   - `licenses/LGPL-3.0-or-later.txt`
   - `compliance/provenance.json`
