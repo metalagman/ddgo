@@ -9,6 +9,29 @@
 
 `ddgo` is a Go port of [Matomo Device Detector](https://github.com/matomo-org/device-detector).
 
+It parses user-agent strings (and optional Client Hints) into normalized bot/client/OS/device metadata.
+
+## What it detects
+
+- **Bot**: bot flag, bot name, category, producer metadata.
+- **Client**: client type, name, version, engine, engine version.
+- **OS**: operating system name, version, and platform.
+- **Device**: device type, brand, and model.
+
+## Why ddgo
+
+- Uses upstream Matomo regex snapshot data.
+- Produces deterministic compiled artifacts (`sync/compiled.json`, `sync/manifest.json`).
+- Supports Client Hints enrichment (`ParseWithClientHints`, `ParseWithHeaders`).
+- Concurrency-safe detector usage.
+- Optional pluggable parse-result cache.
+
+## Install
+
+```bash
+go get github.com/metalagman/ddgo
+```
+
 ## Library usage
 
 ```go
@@ -24,6 +47,16 @@ if err != nil {
 }
 // result.Client.Name == "Firefox"
 // result.Client.Version == "124.0"
+```
+
+Bot + client + OS + device fields:
+
+```go
+result, _ := detector.Parse("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0")
+// result.Bot.IsBot == false
+// result.Client.Name == "Firefox"
+// result.OS.Name == "Windows"
+// result.Device.Type == "Desktop"
 ```
 
 Bot detection:
@@ -91,5 +124,28 @@ hints := ddgo.ParseClientHintsFromHeaders(headers)
 // len(hints.Brands) == 3
 // hints.Platform == "Android"
 ```
+
+Cache configuration:
+
+```go
+detector, _ = ddgo.New(ddgo.WithResultCacheSize(512))
+// or provide custom cache implementation:
+// detector, _ = ddgo.New(ddgo.WithResultCache(myCache))
+```
+
+## Data source and sync model
+
+- Upstream source: `matomo-org/device-detector` regex definitions.
+- Snapshot mirror path: `sync/current/`.
+- Compiled runtime artifact: `sync/compiled.json`.
+- Manifest/provenance metadata are maintained for reproducibility and compliance.
+
+## Licensing
+
+- `ddgo` project source code is licensed under MIT.
+- Snapshot-derived upstream data remains under upstream terms (LGPL-3.0-or-later); see:
+  - `THIRD_PARTY_NOTICES.md`
+  - `licenses/LGPL-3.0-or-later.txt`
+  - `compliance/provenance.json`
 
 Runnable examples are in [`example_test.go`](example_test.go) (`Example*` functions).
