@@ -1,7 +1,7 @@
 package ddgo
 
-func parseClient(runtime *parserRuntime, ua string) (Client, error) {
-	client, ok, err := parseClientSnapshot(runtime, ua)
+func parseClient(runtime *parserRuntime, ua string, uaRunes []rune) (Client, error) {
+	client, ok, err := parseClientSnapshot(runtime, ua, uaRunes)
 	if err != nil {
 		return Client{}, err
 	}
@@ -11,8 +11,8 @@ func parseClient(runtime *parserRuntime, ua string) (Client, error) {
 	return parseClientLegacy(ua), nil
 }
 
-func parseOS(runtime *parserRuntime, ua string) (OS, error) {
-	osInfo, ok, err := parseOSSnapshot(runtime, ua)
+func parseOS(runtime *parserRuntime, ua string, uaRunes []rune) (OS, error) {
+	osInfo, ok, err := parseOSSnapshot(runtime, ua, uaRunes)
 	if err != nil {
 		return OS{}, err
 	}
@@ -22,8 +22,8 @@ func parseOS(runtime *parserRuntime, ua string) (OS, error) {
 	return parseOSLegacy(ua), nil
 }
 
-func parseDevice(runtime *parserRuntime, ua string) (Device, error) {
-	device, ok, err := parseDeviceSnapshot(runtime, ua)
+func parseDevice(runtime *parserRuntime, ua string, uaRunes []rune) (Device, error) {
+	device, ok, err := parseDeviceSnapshot(runtime, ua, uaRunes)
 	if err != nil {
 		return Device{}, err
 	}

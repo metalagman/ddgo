@@ -34,9 +34,9 @@ var (
 	rePixelModel   = regexp.MustCompile(`\b(Pixel(?: [A-Za-z0-9]+)*)\b`)
 )
 
-func parseBot(runtime *parserRuntime, ua string) (Bot, error) {
+func parseBot(runtime *parserRuntime, ua string, uaRunes []rune) (Bot, error) {
 	for _, rule := range runtime.botRules {
-		_, matched, matchErr := matchRegexp2String(rule.pattern, ua)
+		_, matched, matchErr := matchRegexp2Runes(rule.pattern, uaRunes)
 		if matchErr != nil {
 			return Bot{}, fmt.Errorf("match bot rule %q: %w", rule.name, matchErr)
 		}

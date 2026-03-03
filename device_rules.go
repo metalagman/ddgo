@@ -55,9 +55,9 @@ type deviceRule struct {
 	models        []deviceModelRule
 }
 
-func parseDeviceSnapshot(runtime *parserRuntime, ua string) (Device, bool, error) {
+func parseDeviceSnapshot(runtime *parserRuntime, ua string, uaRunes []rune) (Device, bool, error) {
 	for _, rule := range runtime.deviceRules {
-		device, ok, err := parseDeviceFromRule(ua, rule)
+		device, ok, err := parseDeviceFromRule(ua, uaRunes, rule)
 		if err != nil {
 			return Device{}, false, err
 		}
@@ -69,8 +69,8 @@ func parseDeviceSnapshot(runtime *parserRuntime, ua string) (Device, bool, error
 	return Device{}, false, nil
 }
 
-func parseDeviceFromRule(ua string, rule deviceRule) (Device, bool, error) {
-	topMatch, ok, matchErr := matchRegexp2String(rule.pattern, ua)
+func parseDeviceFromRule(ua string, uaRunes []rune, rule deviceRule) (Device, bool, error) {
+	topMatch, ok, matchErr := matchRegexp2Runes(rule.pattern, uaRunes)
 	if matchErr != nil {
 		return Device{}, false, fmt.Errorf("match device rule for brand %q: %w", rule.brand, matchErr)
 	}
@@ -81,7 +81,7 @@ func parseDeviceFromRule(ua string, rule deviceRule) (Device, bool, error) {
 	deviceType := normalizeDeviceType(rule.deviceType)
 	model := normalizeModel(expandRuleTemplate(rule.modelTemplate, topMatch))
 	var err error
-	deviceType, model, err = applyNestedDeviceRules(ua, rule.models, rule.brand, deviceType, model)
+	deviceType, model, err = applyNestedDeviceRules(uaRunes, rule.models, rule.brand, deviceType, model)
 	if err != nil {
 		return Device{}, false, err
 	}
@@ -94,7 +94,7 @@ func parseDeviceFromRule(ua string, rule deviceRule) (Device, bool, error) {
 }
 
 func applyNestedDeviceRules(
-	ua string,
+	uaRunes []rune,
 	modelRules []deviceModelRule,
 	brand, currentType, currentModel string,
 ) (deviceType, model string, err error) {
@@ -102,7 +102,7 @@ func applyNestedDeviceRules(
 	model = currentModel
 
 	for _, nested := range modelRules {
-		nestedMatch, nestedOK, nestedErr := matchRegexp2String(nested.pattern, ua)
+		nestedMatch, nestedOK, nestedErr := matchRegexp2Runes(nested.pattern, uaRunes)
 		if nestedErr != nil {
 			return Unknown, Unknown, fmt.Errorf("match nested device rule for brand %q: %w", brand, nestedErr)
 		}

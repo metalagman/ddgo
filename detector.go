@@ -104,24 +104,26 @@ func (d *Detector) prepareUserAgent(userAgent string) string {
 }
 
 func (d *Detector) parseUserAgent(ua string, hints ClientHints) (Result, error) {
-	bot, err := parseBot(d.runtime, ua)
+	uaRunes := []rune(ua)
+
+	bot, err := parseBot(d.runtime, ua, uaRunes)
 	if err != nil {
 		return Result{}, fmt.Errorf("parse bot: %w", err)
 	}
 	client := unknownClient()
 	if !bot.IsBot {
-		client, err = parseClient(d.runtime, ua)
+		client, err = parseClient(d.runtime, ua, uaRunes)
 		if err != nil {
 			return Result{}, fmt.Errorf("parse client: %w", err)
 		}
 	}
-	osInfo, err := parseOS(d.runtime, ua)
+	osInfo, err := parseOS(d.runtime, ua, uaRunes)
 	if err != nil {
 		return Result{}, fmt.Errorf("parse os: %w", err)
 	}
 	device := deviceForBot(bot)
 	if !bot.IsBot {
-		device, err = parseDevice(d.runtime, ua)
+		device, err = parseDevice(d.runtime, ua, uaRunes)
 		if err != nil {
 			return Result{}, fmt.Errorf("parse device: %w", err)
 		}

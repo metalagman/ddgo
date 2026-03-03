@@ -32,9 +32,9 @@ type osRule struct {
 	versions        []osVersionRule
 }
 
-func parseOSSnapshot(runtime *parserRuntime, ua string) (OS, bool, error) {
+func parseOSSnapshot(runtime *parserRuntime, ua string, uaRunes []rune) (OS, bool, error) {
 	for _, rule := range runtime.osRules {
-		match, ok, matchErr := matchRegexp2String(rule.pattern, ua)
+		match, ok, matchErr := matchRegexp2Runes(rule.pattern, uaRunes)
 		if matchErr != nil {
 			return OS{}, false, fmt.Errorf("match os rule: %w", matchErr)
 		}
@@ -42,7 +42,7 @@ func parseOSSnapshot(runtime *parserRuntime, ua string) (OS, bool, error) {
 			continue
 		}
 
-		osInfo, err := buildOSFromRule(rule, ua, match)
+		osInfo, err := buildOSFromRule(rule, ua, uaRunes, match)
 		if err != nil {
 			return OS{}, false, err
 		}
@@ -52,11 +52,11 @@ func parseOSSnapshot(runtime *parserRuntime, ua string) (OS, bool, error) {
 	return OS{}, false, nil
 }
 
-func buildOSFromRule(rule osRule, ua string, match *regexp2.Match) (OS, error) {
+func buildOSFromRule(rule osRule, ua string, uaRunes []rune, match *regexp2.Match) (OS, error) {
 	name := normalizeRuleField(expandRuleTemplate(rule.nameTemplate, match))
 	version := normalizeRuleVersion(expandRuleTemplate(rule.versionTemplate, match))
 	if version == Unknown {
-		resolvedVersion, err := resolveOSNestedVersion(rule.versions, ua)
+		resolvedVersion, err := resolveOSNestedVersion(rule.versions, uaRunes)
 		if err != nil {
 			return OS{}, err
 		}
@@ -72,9 +72,9 @@ func buildOSFromRule(rule osRule, ua string, match *regexp2.Match) (OS, error) {
 	}, nil
 }
 
-func resolveOSNestedVersion(versionRules []osVersionRule, ua string) (string, error) {
+func resolveOSNestedVersion(versionRules []osVersionRule, uaRunes []rune) (string, error) {
 	for _, nested := range versionRules {
-		nestedMatch, nestedOK, nestedErr := matchRegexp2String(nested.pattern, ua)
+		nestedMatch, nestedOK, nestedErr := matchRegexp2Runes(nested.pattern, uaRunes)
 		if nestedErr != nil {
 			return "", fmt.Errorf("match os version rule: %w", nestedErr)
 		}

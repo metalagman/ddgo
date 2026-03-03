@@ -59,9 +59,9 @@ var (
 	reEngineArachne      = regexp.MustCompile(`\bxChaos_Arachne/([0-9.]+)\b`)
 )
 
-func parseClientSnapshot(runtime *parserRuntime, ua string) (Client, bool, error) {
+func parseClientSnapshot(runtime *parserRuntime, ua string, uaRunes []rune) (Client, bool, error) {
 	for _, set := range runtime.clientRules {
-		client, ok, err := parseClientFromRuleSet(set, ua, runtime)
+		client, ok, err := parseClientFromRuleSet(set, ua, uaRunes, runtime)
 		if err != nil {
 			return Client{}, false, err
 		}
@@ -73,9 +73,9 @@ func parseClientSnapshot(runtime *parserRuntime, ua string) (Client, bool, error
 	return Client{}, false, nil
 }
 
-func parseClientFromRuleSet(set clientRuleSet, ua string, runtime *parserRuntime) (Client, bool, error) {
+func parseClientFromRuleSet(set clientRuleSet, ua string, uaRunes []rune, runtime *parserRuntime) (Client, bool, error) {
 	for _, rule := range set.rules {
-		match, ok, matchErr := matchRegexp2String(rule.pattern, ua)
+		match, ok, matchErr := matchRegexp2Runes(rule.pattern, uaRunes)
 		if matchErr != nil {
 			return Client{}, false, fmt.Errorf("match client rule: %w", matchErr)
 		}
@@ -83,7 +83,7 @@ func parseClientFromRuleSet(set clientRuleSet, ua string, runtime *parserRuntime
 			continue
 		}
 
-		client, buildErr := buildClientFromMatch(set.clientType, rule, ua, match, runtime)
+		client, buildErr := buildClientFromMatch(set.clientType, rule, ua, uaRunes, match, runtime)
 		if buildErr != nil {
 			return Client{}, false, buildErr
 		}
@@ -96,6 +96,7 @@ func buildClientFromMatch(
 	clientType string,
 	rule clientRule,
 	ua string,
+	uaRunes []rune,
 	match *regexp2.Match,
 	runtime *parserRuntime,
 ) (Client, error) {
@@ -105,7 +106,7 @@ func buildClientFromMatch(
 	engine := strings.TrimSpace(rule.engineDefault)
 	var err error
 	if engine == "" {
-		engine, err = detectClientEngine(ua, runtime.clientEngines)
+		engine, err = detectClientEngine(ua, uaRunes, runtime.clientEngines)
 		if err != nil {
 			return Client{}, fmt.Errorf("detect client engine: %w", err)
 		}
@@ -219,9 +220,9 @@ func loadClientEngineRules(files map[string]string) ([]clientEngineRule, error) 
 	return compiled, nil
 }
 
-func detectClientEngine(ua string, rules []clientEngineRule) (string, error) {
+func detectClientEngine(ua string, uaRunes []rune, rules []clientEngineRule) (string, error) {
 	for _, rule := range rules {
-		_, ok, matchErr := matchRegexp2String(rule.pattern, ua)
+		_, ok, matchErr := matchRegexp2Runes(rule.pattern, uaRunes)
 		if matchErr != nil {
 			return Unknown, fmt.Errorf("match client engine rule: %w", matchErr)
 		}
