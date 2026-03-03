@@ -60,4 +60,3 @@ jobs:
             sync/current/**
             sync/compiled.json
             sync/manifest.json
-            compliance/provenance.json

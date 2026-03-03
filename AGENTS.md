@@ -23,7 +23,7 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 - Test suites and fixtures:
   - `*_test.go`, `testdata/`, `sync/current/`
 - Compliance and licensing:
-  - `compliance/`, `licenses/`, `THIRD_PARTY_NOTICES.md`
+  - `licenses/`, `THIRD_PARTY_NOTICES.md`
 
 ## Workflow
 

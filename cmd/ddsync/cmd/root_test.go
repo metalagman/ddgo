@@ -17,14 +17,13 @@ const testResolvedUpstreamVersion = "v6.0.0"
 func TestUpdateVerifyStatusText(t *testing.T) {
 	t.Parallel()
 
-	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
+	snapshotDir, outputPath, manifestPath := testFiles(t)
 
 	out, _, err := execCommand(t,
 		"update",
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 	)
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
@@ -38,7 +37,6 @@ func TestUpdateVerifyStatusText(t *testing.T) {
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 	)
 	if err != nil {
 		t.Fatalf("verify failed: %v", err)
@@ -52,7 +50,6 @@ func TestUpdateVerifyStatusText(t *testing.T) {
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 	)
 	if err != nil {
 		t.Fatalf("status failed: %v", err)
@@ -65,13 +62,12 @@ func TestUpdateVerifyStatusText(t *testing.T) {
 func TestStatusJSONDirty(t *testing.T) {
 	t.Parallel()
 
-	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
+	snapshotDir, outputPath, manifestPath := testFiles(t)
 	_, _, err := execCommand(t,
 		"update",
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 	)
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
@@ -86,7 +82,6 @@ func TestStatusJSONDirty(t *testing.T) {
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 		"--json",
 	)
 	if err != nil {
@@ -108,13 +103,12 @@ func TestStatusJSONDirty(t *testing.T) {
 func TestVerifyJSONError(t *testing.T) {
 	t.Parallel()
 
-	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
+	snapshotDir, outputPath, manifestPath := testFiles(t)
 	_, _, err := execCommand(t,
 		"update",
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 	)
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
@@ -129,7 +123,6 @@ func TestVerifyJSONError(t *testing.T) {
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 		"--json",
 	)
 	if err == nil {
@@ -145,50 +138,10 @@ func TestVerifyJSONError(t *testing.T) {
 	}
 }
 
-func TestVerifyDetectsProvenanceMismatch(t *testing.T) {
-	t.Parallel()
-
-	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
-	_, _, err := execCommand(t,
-		"update",
-		"--snapshot-dir", snapshotDir,
-		"--output", outputPath,
-		"--manifest", manifestPath,
-		"--provenance", provenancePath,
-	)
-	if err != nil {
-		t.Fatalf("update failed: %v", err)
-	}
-
-	raw, err := os.ReadFile(provenancePath)
-	if err != nil {
-		t.Fatalf("read provenance: %v", err)
-	}
-	mutated := strings.Replace(string(raw), testResolvedUpstreamVersion, "v6.0.1", 1)
-	if err := os.WriteFile(provenancePath, []byte(mutated), 0o644); err != nil {
-		t.Fatalf("write provenance: %v", err)
-	}
-
-	out, _, err := execCommand(t,
-		"verify",
-		"--snapshot-dir", snapshotDir,
-		"--output", outputPath,
-		"--manifest", manifestPath,
-		"--provenance", provenancePath,
-		"--json",
-	)
-	if err == nil {
-		t.Fatal("verify expected mismatch error")
-	}
-	if !strings.Contains(out, "upstream version mismatch") {
-		t.Fatalf("expected upstream mismatch in output, got %q", out)
-	}
-}
-
 func TestUpdateFailsWhenResolverFails(t *testing.T) {
 	t.Parallel()
 
-	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
+	snapshotDir, outputPath, manifestPath := testFiles(t)
 	_, _, err := execCommandWithResolver(t, func(string) (string, error) {
 		return "", fmt.Errorf("resolver failed")
 	},
@@ -196,7 +149,6 @@ func TestUpdateFailsWhenResolverFails(t *testing.T) {
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 	)
 	if err == nil {
 		t.Fatal("expected error when upstream resolver fails")
@@ -209,7 +161,7 @@ func TestUpdateFailsWhenResolverFails(t *testing.T) {
 func TestUpdateFailsWhenSnapshotSyncFails(t *testing.T) {
 	t.Parallel()
 
-	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
+	snapshotDir, outputPath, manifestPath := testFiles(t)
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	root := newRootCommandWithDependencies(
@@ -224,7 +176,6 @@ func TestUpdateFailsWhenSnapshotSyncFails(t *testing.T) {
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 	})
 
 	_, err := root.ExecuteC()
@@ -239,13 +190,12 @@ func TestUpdateFailsWhenSnapshotSyncFails(t *testing.T) {
 func TestUpdateRequiresUpstreamRepo(t *testing.T) {
 	t.Parallel()
 
-	snapshotDir, outputPath, manifestPath, provenancePath := testFiles(t)
+	snapshotDir, outputPath, manifestPath := testFiles(t)
 	_, _, err := execCommand(t,
 		"update",
 		"--snapshot-dir", snapshotDir,
 		"--output", outputPath,
 		"--manifest", manifestPath,
-		"--provenance", provenancePath,
 		"--upstream-repo", "",
 	)
 	if err == nil {
@@ -273,6 +223,14 @@ func TestRemovedVersionFlagsRejected(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "unknown flag: --upstream-version") {
 		t.Fatalf("unexpected error for --upstream-version: %v", err)
+	}
+
+	_, _, err = execCommand(t, "status", "--provenance", "compliance/provenance.json")
+	if err == nil {
+		t.Fatal("expected --provenance to be rejected")
+	}
+	if !strings.Contains(err.Error(), "unknown flag: --provenance") {
+		t.Fatalf("unexpected error for --provenance: %v", err)
 	}
 }
 
@@ -350,7 +308,7 @@ func execCommandWithVersionAndResolver(
 	return out.String(), stderr.String(), err
 }
 
-func testFiles(t *testing.T) (string, string, string, string) {
+func testFiles(t *testing.T) (string, string, string) {
 	t.Helper()
 
 	root := t.TempDir()
@@ -366,6 +324,5 @@ func testFiles(t *testing.T) (string, string, string, string) {
 	}
 	outputPath := filepath.Join(root, "compiled.json")
 	manifestPath := filepath.Join(root, "manifest.json")
-	provenancePath := filepath.Join(root, "provenance.json")
-	return snapshotDir, outputPath, manifestPath, provenancePath
+	return snapshotDir, outputPath, manifestPath
 }

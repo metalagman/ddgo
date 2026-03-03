@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/metalagman/ddgo/internal/ddsync"
@@ -23,12 +21,6 @@ func newStatusCommand(opts *rootOptions) *cobra.Command {
 				return err
 			}
 
-			issues, err := provenanceIssues(cfg, opts.provenancePath)
-			if err != nil {
-				report.Issues = append(report.Issues, fmt.Sprintf("provenance check failed: %v", err))
-			} else {
-				report.Issues = append(report.Issues, issues...)
-			}
 			report.Issues = normalizeIssues(report.Issues)
 			report.Clean = len(report.Issues) == 0
 

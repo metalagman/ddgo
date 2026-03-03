@@ -32,10 +32,6 @@ func newUpdateCommand(opts *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = updateProvenance(cfg, opts.provenancePath)
-			if err != nil {
-				return err
-			}
 			payload := updateResult{
 				Operation:       "update",
 				UpstreamRepo:    manifest.UpstreamRepo,

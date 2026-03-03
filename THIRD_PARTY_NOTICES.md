@@ -10,10 +10,8 @@ This repository includes data and compatibility behavior derived from third-part
 - Local usage:
   - Current mirrored `regexes/` snapshot inputs in `sync/current/`
   - Deterministic generated artifact in `sync/compiled.json`
-  - Provenance metadata in `compliance/provenance.json`
 - License copy: `licenses/LGPL-3.0-or-later.txt`
 
 ## Redistribution Notes
 
 - Preserve this notice file and the corresponding license files when redistributing binaries or source.
-- Keep provenance metadata (`compliance/provenance.json`) with release artifacts so generated data remains auditable.

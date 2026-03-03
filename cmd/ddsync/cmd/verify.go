@@ -28,12 +28,6 @@ func newVerifyCommand(opts *rootOptions) *cobra.Command {
 			}
 
 			issues := append([]string(nil), report.Issues...)
-			provenanceIssues, err := provenanceIssues(cfg, opts.provenancePath)
-			if err != nil {
-				issues = append(issues, fmt.Sprintf("provenance check failed: %v", err))
-			} else {
-				issues = append(issues, provenanceIssues...)
-			}
 
 			if len(issues) > 0 {
 				issues = normalizeIssues(issues)

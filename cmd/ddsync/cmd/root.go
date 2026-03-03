@@ -16,7 +16,6 @@ const (
 	defaultSnapshotDir  = "sync/current"
 	defaultOutputPath   = "sync/compiled.json"
 	defaultManifest     = "sync/manifest.json"
-	defaultProvenance   = "compliance/provenance.json"
 	defaultUpstreamRepo = "matomo-org/device-detector"
 )
 
@@ -29,7 +28,6 @@ type rootOptions struct {
 	snapshotDir        string
 	outputPath         string
 	manifest           string
-	provenancePath     string
 	upstreamRepo       string
 	version            string
 	jsonOutput         bool
@@ -83,7 +81,6 @@ func newRootCommandWithDependencies(
 	flags.StringVar(&opts.snapshotDir, "snapshot-dir", defaultSnapshotDir, "Path to pinned snapshot directory")
 	flags.StringVar(&opts.outputPath, "output", defaultOutputPath, "Path to generated deterministic artifact")
 	flags.StringVar(&opts.manifest, "manifest", defaultManifest, "Path to generated manifest")
-	flags.StringVar(&opts.provenancePath, "provenance", defaultProvenance, "Path to compliance provenance metadata")
 	flags.StringVar(&opts.upstreamRepo, "upstream-repo", defaultUpstreamRepo, "Upstream repository slug for source data")
 	flags.BoolVar(&opts.jsonOutput, "json", false, "Emit structured JSON output")
 

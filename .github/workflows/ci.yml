@@ -43,7 +43,7 @@ jobs:
       - name: Race tests
         run: go test -race ./...
 
-      - name: Compliance checks
+      - name: Licensing checks
         shell: bash
         run: |
           set -euo pipefail
@@ -51,13 +51,3 @@ jobs:
           test -f LICENSE
           test -f THIRD_PARTY_NOTICES.md
           test -f licenses/LGPL-3.0-or-later.txt
-          test -f compliance/provenance.json
-
-          grep -q '"license": "LGPL-3.0-or-later"' compliance/provenance.json
-          grep -q '"upstream_version": "' compliance/provenance.json
-
-          compiled_sha=$(sha256sum sync/compiled.json | awk '{print $1}')
-          manifest_sha=$(sha256sum sync/manifest.json | awk '{print $1}')
-
-          grep -q "\"sha256\": \"${compiled_sha}\"" compliance/provenance.json
-          grep -q "\"manifest_sha256\": \"${manifest_sha}\"" compliance/provenance.json

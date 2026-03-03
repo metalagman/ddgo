@@ -166,15 +166,14 @@ detector, _ := ddgo.New(ddgo.WithResultCache(&myCache{}))
 - Upstream source: `matomo-org/device-detector` regex definitions.
 - Snapshot mirror path: `sync/current/`.
 - Compiled runtime artifact: `sync/compiled.json`.
-- Manifest/provenance metadata are maintained for reproducibility and compliance.
+- Manifest metadata is maintained for reproducibility.
 
 ## Licensing
 
 - `ddgo` is licensed under LGPL-3.0-or-later (same as Matomo Device Detector).
-- License and provenance references:
+- License and notice references:
   - `LICENSE`
   - `THIRD_PARTY_NOTICES.md`
   - `licenses/LGPL-3.0-or-later.txt`
-  - `compliance/provenance.json`
 
 Runnable examples are in [`example_test.go`](example_test.go) (`Example*` functions).
