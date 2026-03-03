@@ -190,7 +190,7 @@ func TestUpstreamFixtureDifferentialParity(t *testing.T) {
 			}
 
 			metricByLabel["client type"].compare(
-				path, i, "client.type", mapStringValue(fixture.Client, "type"), string(result.Client.Type), normalizeClientType,
+				path, i, "client.type", mapStringValue(fixture.Client, "type"), result.Client.Type, normalizeClientType,
 			)
 			metricByLabel["client name"].compare(
 				path, i, "client.name", mapStringValue(fixture.Client, "name"), result.Client.Name, normalizeNameValue,
@@ -201,14 +201,14 @@ func TestUpstreamFixtureDifferentialParity(t *testing.T) {
 
 			expectedOS := normalizeFixtureMap(fixture.OS)
 			metricByLabel["os name"].compare(
-				path, i, "os.name", mapStringValue(expectedOS, "name"), string(result.OS.Name), normalizeOSName,
+				path, i, "os.name", mapStringValue(expectedOS, "name"), result.OS.Name, normalizeOSName,
 			)
 			metricByLabel["os version"].compare(
 				path, i, "os.version", mapStringValue(expectedOS, "version"), result.OS.Version, normalizeVersionValue,
 			)
 
 			metricByLabel["device type"].compare(
-				path, i, "device.type", mapStringValue(fixture.Device, "type"), string(result.Device.Type), normalizeFixtureDeviceType,
+				path, i, "device.type", mapStringValue(fixture.Device, "type"), result.Device.Type, normalizeDeviceTypeValue,
 			)
 			metricByLabel["device brand"].compare(
 				path, i, "device.brand", mapStringValue(fixture.Device, "brand"), result.Device.Brand, normalizeNameValue,
@@ -354,7 +354,7 @@ func normalizeFixtureHeaders(raw map[string]any) map[string]string {
 
 func normalizeNameValue(value string) string {
 	value = strings.TrimSpace(strings.ToLower(value))
-	if value == "" || value == strings.ToLower(unknownLabel) {
+	if value == "" || value == strings.ToLower(Unknown) {
 		return ""
 	}
 	value = strings.ReplaceAll(value, "_", " ")
@@ -367,7 +367,7 @@ func normalizeModelValue(value string) string {
 
 func normalizeVersionValue(value string) string {
 	value = strings.TrimSpace(strings.ToLower(value))
-	if value == "" || value == strings.ToLower(unknownLabel) {
+	if value == "" || value == strings.ToLower(Unknown) {
 		return ""
 	}
 	value = strings.TrimPrefix(value, "v")
@@ -381,7 +381,7 @@ func normalizeVersionValue(value string) string {
 
 func normalizeClientType(value string) string {
 	value = strings.TrimSpace(strings.ToLower(value))
-	if value == "" || value == strings.ToLower(unknownLabel) {
+	if value == "" || value == strings.ToLower(Unknown) {
 		return ""
 	}
 	value = strings.ReplaceAll(value, "_", " ")
@@ -414,9 +414,9 @@ func normalizeOSName(value string) string {
 	}
 }
 
-func normalizeFixtureDeviceType(value string) string {
+func normalizeDeviceTypeValue(value string) string {
 	value = strings.TrimSpace(strings.ToLower(value))
-	if value == "" || value == strings.ToLower(unknownLabel) {
+	if value == "" || value == strings.ToLower(Unknown) {
 		return ""
 	}
 	value = strings.ReplaceAll(value, "_", " ")

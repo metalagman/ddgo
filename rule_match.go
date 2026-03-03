@@ -62,11 +62,17 @@ func expandRuleTemplate(template string, match *regexp2.Match) string {
 func normalizeRuleVersion(version string) string {
 	version = strings.TrimSpace(strings.ReplaceAll(version, "_", "."))
 	version = strings.Trim(version, " .")
+	if version == "" {
+		return Unknown
+	}
 	return version
 }
 
 func normalizeRuleField(value string) string {
 	value = strings.TrimSpace(value)
+	if value == "" {
+		return Unknown
+	}
 	return value
 }
 

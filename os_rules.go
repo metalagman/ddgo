@@ -53,9 +53,9 @@ func parseOSSnapshot(runtime *parserRuntime, ua string) (OS, bool, error) {
 }
 
 func buildOSFromRule(rule osRule, ua string, match *regexp2.Match) (OS, error) {
-	name := normalizeOSNameValue(OSName(normalizeRuleField(expandRuleTemplate(rule.nameTemplate, match))))
+	name := normalizeRuleField(expandRuleTemplate(rule.nameTemplate, match))
 	version := normalizeRuleVersion(expandRuleTemplate(rule.versionTemplate, match))
-	if version == "" {
+	if version == Unknown {
 		resolvedVersion, err := resolveOSNestedVersion(rule.versions, ua)
 		if err != nil {
 			return OS{}, err
@@ -83,7 +83,7 @@ func resolveOSNestedVersion(versionRules []osVersionRule, ua string) (string, er
 		}
 
 		version := expandRuleTemplate(nested.versionTemplate, nestedMatch)
-		if normalizeRuleVersion(version) != "" {
+		if normalizeRuleVersion(version) != Unknown {
 			return version, nil
 		}
 	}
@@ -146,35 +146,35 @@ func compileOSVersionRules(rawRules []osYAMLVersionRule) ([]osVersionRule, error
 	return versionRules, nil
 }
 
-func detectOSPlatform(ua string, osName OSName) Platform {
+func detectOSPlatform(ua, osName string) string {
 	lowerUA := strings.ToLower(ua)
 	if platform := platformFromUserAgent(lowerUA); platform != "" {
 		return platform
 	}
 
-	lowerOS := strings.ToLower(string(osName))
+	lowerOS := strings.ToLower(osName)
 	switch {
 	case strings.Contains(lowerOS, "android"),
 		strings.Contains(lowerOS, "ios"),
 		strings.Contains(lowerOS, "ipad"),
 		strings.Contains(lowerOS, "watchos"),
 		strings.Contains(lowerOS, "harmony"):
-		return PlatformARM
+		return "ARM"
 	case strings.Contains(lowerOS, "windows"):
 		return windowsPlatform(ua)
 	default:
-		return PlatformUnknown
+		return Unknown
 	}
 }
 
-func platformFromUserAgent(lowerUA string) Platform {
+func platformFromUserAgent(lowerUA string) string {
 	switch {
 	case hasARMMarker(lowerUA):
-		return PlatformARM
+		return "ARM"
 	case hasX64Marker(lowerUA):
-		return PlatformX64
+		return "x64"
 	case hasX86Marker(lowerUA):
-		return PlatformX86
+		return "x86"
 	default:
 		return ""
 	}
