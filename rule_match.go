@@ -76,23 +76,6 @@ func normalizeRuleField(value string) string {
 	return value
 }
 
-func matchRegexp2String(pattern *regexp2.Regexp, input string) (*regexp2.Match, bool, error) {
-	if pattern == nil {
-		return nil, false, nil
-	}
-	match, err := pattern.FindStringMatch(input)
-	if err != nil {
-		if isRegexp2MatchTimeout(err) {
-			return nil, false, nil
-		}
-		return nil, false, err
-	}
-	if match == nil {
-		return nil, false, nil
-	}
-	return match, true, nil
-}
-
 func matchRegexp2Runes(pattern *regexp2.Regexp, input []rune) (*regexp2.Match, bool, error) {
 	if pattern == nil {
 		return nil, false, nil
@@ -108,6 +91,20 @@ func matchRegexp2Runes(pattern *regexp2.Regexp, input []rune) (*regexp2.Match, b
 		return nil, false, nil
 	}
 	return match, true, nil
+}
+
+func matchRegexp2RunesBool(pattern *regexp2.Regexp, input []rune) (bool, error) {
+	if pattern == nil {
+		return false, nil
+	}
+	matched, err := pattern.MatchRunes(input)
+	if err != nil {
+		if isRegexp2MatchTimeout(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return matched, nil
 }
 
 func isRegexp2MatchTimeout(err error) bool {

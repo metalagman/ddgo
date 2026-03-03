@@ -55,9 +55,9 @@ type deviceRule struct {
 	models        []deviceModelRule
 }
 
-func parseDeviceSnapshot(runtime *parserRuntime, ua string, uaRunes []rune) (Device, bool, error) {
+func parseDeviceSnapshot(runtime *parserRuntime, uaRunes []rune) (Device, bool, error) {
 	for _, rule := range runtime.deviceRules {
-		device, ok, err := parseDeviceFromRule(ua, uaRunes, rule)
+		device, ok, err := parseDeviceFromRule(uaRunes, rule)
 		if err != nil {
 			return Device{}, false, err
 		}
@@ -69,7 +69,7 @@ func parseDeviceSnapshot(runtime *parserRuntime, ua string, uaRunes []rune) (Dev
 	return Device{}, false, nil
 }
 
-func parseDeviceFromRule(ua string, uaRunes []rune, rule deviceRule) (Device, bool, error) {
+func parseDeviceFromRule(uaRunes []rune, rule deviceRule) (Device, bool, error) {
 	topMatch, ok, matchErr := matchRegexp2Runes(rule.pattern, uaRunes)
 	if matchErr != nil {
 		return Device{}, false, fmt.Errorf("match device rule for brand %q: %w", rule.brand, matchErr)

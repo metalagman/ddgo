@@ -9,6 +9,7 @@ func BenchmarkParseFirefox(b *testing.B) {
 		b.Fatalf("New() failed: %v", err)
 	}
 	ua := "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if _, err := detector.Parse(ua); err != nil {
 			b.Fatalf("Parse() failed: %v", err)
@@ -23,6 +24,7 @@ func BenchmarkParseGooglebot(b *testing.B) {
 		b.Fatalf("New() failed: %v", err)
 	}
 	ua := "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if _, err := detector.Parse(ua); err != nil {
 			b.Fatalf("Parse() failed: %v", err)
@@ -37,6 +39,10 @@ func BenchmarkParseCachedFirefox(b *testing.B) {
 		b.Fatalf("New() failed: %v", err)
 	}
 	ua := "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
+	if _, err := detector.Parse(ua); err != nil {
+		b.Fatalf("Parse() cache warm-up failed: %v", err)
+	}
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if _, err := detector.Parse(ua); err != nil {
 			b.Fatalf("Parse() failed: %v", err)
@@ -57,6 +63,7 @@ func BenchmarkParseWithHeaders(b *testing.B) {
 		"Sec-CH-UA-Model":             "\"SM-G991B\"",
 		"Sec-CH-UA-Mobile":            "?1",
 	}
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if _, err := detector.ParseWithHeaders("Mozilla/5.0", headers); err != nil {
 			b.Fatalf("ParseWithHeaders() failed: %v", err)

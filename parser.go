@@ -36,7 +36,7 @@ var (
 
 func parseBot(runtime *parserRuntime, ua string, uaRunes []rune) (Bot, error) {
 	for _, rule := range runtime.botRules {
-		_, matched, matchErr := matchRegexp2Runes(rule.pattern, uaRunes)
+		matched, matchErr := matchRegexp2RunesBool(rule.pattern, uaRunes)
 		if matchErr != nil {
 			return Bot{}, fmt.Errorf("match bot rule %q: %w", rule.name, matchErr)
 		}

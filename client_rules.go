@@ -222,7 +222,7 @@ func loadClientEngineRules(files map[string]string) ([]clientEngineRule, error) 
 
 func detectClientEngine(ua string, uaRunes []rune, rules []clientEngineRule) (string, error) {
 	for _, rule := range rules {
-		_, ok, matchErr := matchRegexp2Runes(rule.pattern, uaRunes)
+		ok, matchErr := matchRegexp2RunesBool(rule.pattern, uaRunes)
 		if matchErr != nil {
 			return Unknown, fmt.Errorf("match client engine rule: %w", matchErr)
 		}

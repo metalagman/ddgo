@@ -23,7 +23,7 @@ func parseOS(runtime *parserRuntime, ua string, uaRunes []rune) (OS, error) {
 }
 
 func parseDevice(runtime *parserRuntime, ua string, uaRunes []rune) (Device, error) {
-	device, ok, err := parseDeviceSnapshot(runtime, ua, uaRunes)
+	device, ok, err := parseDeviceSnapshot(runtime, uaRunes)
 	if err != nil {
 		return Device{}, err
 	}
