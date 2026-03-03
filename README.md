@@ -7,7 +7,7 @@
 [![version](https://img.shields.io/github/v/release/metalagman/ddgo?sort=semver)](https://github.com/metalagman/ddgo/releases)
 [![license](https://img.shields.io/github/license/metalagman/ddgo)](LICENSE)
 
-`ddgo` is a Go port of Matomo Device Detector.
+`ddgo` is a Go port of [Matomo Device Detector](https://github.com/matomo-org/device-detector).
 
 ## Library usage
 
