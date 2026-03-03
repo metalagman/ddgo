@@ -15,14 +15,6 @@ const (
 	priorityChromium           = 70
 	priorityFirefox            = 60
 	prioritySafari             = 50
-	osNameWindows              = "Windows"
-	osNameAndroid              = "Android"
-	osNameIOS                  = "iOS"
-	osNameMacOS                = "macOS"
-	osNameLinux                = "Linux"
-	osNameChromeOS             = "Chrome OS"
-	platformARM                = "ARM"
-	platformX64                = "x64"
 )
 
 // ClientHintBrand represents one structured brand entry from Sec-CH-UA.
@@ -82,39 +74,39 @@ func applyClientHintClient(client *Client, brands []ClientHintBrand) {
 		return
 	}
 
-	if client.Name == Unknown {
+	if client.Name == "" {
 		client.Type = profile.ClientType
 		client.Name = profile.Name
 		client.Engine = profile.Engine
 	}
-	if profile.Name == canonicalClientName(client.Name) && client.Version == Unknown {
+	if profile.Name == canonicalClientName(client.Name) && client.Version == "" {
 		client.Version = brand.Version
 	}
-	if profile.Name == canonicalClientName(client.Name) && client.EngineVersion == Unknown {
+	if profile.Name == canonicalClientName(client.Name) && client.EngineVersion == "" {
 		client.EngineVersion = brand.Version
 	}
 }
 
 func applyClientHintOS(os *OS, hints ClientHints) {
-	if os.Name == Unknown && hints.Platform != "" {
+	if os.Name == OSNameUnknown && hints.Platform != "" {
 		os.Name = canonicalOSName(hints.Platform)
 	}
-	if os.Version == Unknown && hints.PlatformVersion != "" {
+	if os.Version == "" && hints.PlatformVersion != "" {
 		os.Version = normalizeVersion(hints.PlatformVersion)
 	}
-	if os.Platform == Unknown {
+	if os.Platform == PlatformUnknown {
 		os.Platform = platformForOS(os.Name)
 	}
 }
 
 func applyClientHintDevice(device *Device, os OS, hints ClientHints) {
-	if device.Type == Unknown {
+	if device.Type == DeviceTypeUnknown {
 		device.Type = inferDeviceType(hints.Mobile, os.Name)
 	}
-	if device.Model == Unknown && hints.Model != "" {
+	if device.Model == "" && hints.Model != "" {
 		device.Model = hints.Model
 	}
-	if device.Brand == Unknown {
+	if device.Brand == "" {
 		device.Brand = inferBrandFromModel(device.Model)
 	}
 }
@@ -168,7 +160,7 @@ func headerValue(headers map[string]string, name string) string {
 
 type clientProfile struct {
 	Name       string
-	ClientType string
+	ClientType ClientType
 	Engine     string
 	Priority   int
 }
@@ -193,17 +185,17 @@ func pickClientBrand(brands []ClientHintBrand) (ClientHintBrand, bool) {
 func profileForBrand(brand string) (clientProfile, bool) {
 	switch strings.ToLower(strings.TrimSpace(brand)) {
 	case "microsoft edge", "edge":
-		return clientProfile{Name: "Microsoft Edge", ClientType: "Browser", Engine: "Blink", Priority: priorityEdge}, true
+		return clientProfile{Name: "Microsoft Edge", ClientType: ClientTypeBrowser, Engine: "Blink", Priority: priorityEdge}, true
 	case "opera":
-		return clientProfile{Name: "Opera", ClientType: "Browser", Engine: "Blink", Priority: priorityOpera}, true
+		return clientProfile{Name: "Opera", ClientType: ClientTypeBrowser, Engine: "Blink", Priority: priorityOpera}, true
 	case "google chrome", "chrome":
-		return clientProfile{Name: "Chrome", ClientType: "Browser", Engine: "Blink", Priority: priorityChrome}, true
+		return clientProfile{Name: "Chrome", ClientType: ClientTypeBrowser, Engine: "Blink", Priority: priorityChrome}, true
 	case "chromium":
-		return clientProfile{Name: "Chrome", ClientType: "Browser", Engine: "Blink", Priority: priorityChromium}, true
+		return clientProfile{Name: "Chrome", ClientType: ClientTypeBrowser, Engine: "Blink", Priority: priorityChromium}, true
 	case "mozilla firefox", "firefox":
-		return clientProfile{Name: "Firefox", ClientType: "Browser", Engine: "Gecko", Priority: priorityFirefox}, true
+		return clientProfile{Name: "Firefox", ClientType: ClientTypeBrowser, Engine: "Gecko", Priority: priorityFirefox}, true
 	case "safari":
-		return clientProfile{Name: "Safari", ClientType: "Browser", Engine: "WebKit", Priority: prioritySafari}, true
+		return clientProfile{Name: "Safari", ClientType: ClientTypeBrowser, Engine: "WebKit", Priority: prioritySafari}, true
 	default:
 		return clientProfile{}, false
 	}
@@ -226,34 +218,35 @@ func canonicalClientName(name string) string {
 	}
 }
 
-func canonicalOSName(name string) string {
+func canonicalOSName(name string) OSName {
 	switch strings.ToLower(strings.TrimSpace(name)) {
 	case "windows":
-		return osNameWindows
+		return OSNameWindows
 	case "android":
-		return osNameAndroid
+		return OSNameAndroid
 	case "ios":
-		return osNameIOS
+		return OSNameIOS
 	case "macos", "mac os", "mac os x":
-		return osNameMacOS
+		return OSNameMacOS
 	case "linux":
-		return osNameLinux
+		return OSNameLinux
 	case "chrome os", "cros":
-		return osNameChromeOS
+		return OSNameChromeOS
 	default:
-		return name
+		return OSName(strings.TrimSpace(name))
 	}
 }
 
-func platformForOS(osName string) string {
+func platformForOS(osName OSName) Platform {
 	switch osName {
-	case osNameAndroid, osNameIOS:
-		return platformARM
-	case osNameWindows, osNameMacOS, osNameLinux, osNameChromeOS:
-		return platformX64
-	default:
-		return Unknown
+	case OSNameAndroid, OSNameIOS:
+		return PlatformARM
+	case OSNameWindows, OSNameMacOS, OSNameLinux, OSNameChromeOS:
+		return PlatformX64
+	case OSNameUnknown:
+		return PlatformUnknown
 	}
+	return PlatformUnknown
 }
 
 func normalizeVersion(version string) string {
@@ -268,34 +261,36 @@ func normalizeVersion(version string) string {
 	return strings.Join(parts, ".")
 }
 
-func inferDeviceType(mobile *bool, osName string) string {
+func inferDeviceType(mobile *bool, osName OSName) DeviceType {
 	if mobile != nil {
 		if *mobile {
-			return deviceTypeSmartphone
+			return DeviceTypeSmartphone
 		}
 		switch osName {
-		case osNameAndroid, osNameIOS:
-			return "Tablet"
-		case osNameWindows, osNameMacOS, osNameLinux, osNameChromeOS:
-			return "Desktop"
-		default:
-			return Unknown
+		case OSNameAndroid, OSNameIOS:
+			return DeviceTypeTablet
+		case OSNameWindows, OSNameMacOS, OSNameLinux, OSNameChromeOS:
+			return DeviceTypeDesktop
+		case OSNameUnknown:
+			return DeviceTypeUnknown
 		}
+		return DeviceTypeUnknown
 	}
 
 	switch osName {
-	case osNameAndroid, osNameIOS:
-		return deviceTypeSmartphone
-	case osNameWindows, osNameMacOS, osNameLinux, osNameChromeOS:
-		return "Desktop"
-	default:
-		return Unknown
+	case OSNameAndroid, OSNameIOS:
+		return DeviceTypeSmartphone
+	case OSNameWindows, OSNameMacOS, OSNameLinux, OSNameChromeOS:
+		return DeviceTypeDesktop
+	case OSNameUnknown:
+		return DeviceTypeUnknown
 	}
+	return DeviceTypeUnknown
 }
 
 func inferBrandFromModel(model string) string {
-	if model == Unknown || model == "" {
-		return Unknown
+	if model == "" {
+		return ""
 	}
 	upper := strings.ToUpper(model)
 	switch {
@@ -306,6 +301,6 @@ func inferBrandFromModel(model string) string {
 	case strings.Contains(strings.ToLower(model), "iphone"), strings.Contains(strings.ToLower(model), "ipad"):
 		return "Apple"
 	default:
-		return Unknown
+		return ""
 	}
 }

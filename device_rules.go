@@ -10,20 +10,6 @@ import (
 )
 
 const (
-	deviceTypeSmartphone        = "Smartphone"
-	deviceTypeFeaturePhone      = "Feature Phone"
-	deviceTypePhablet           = "Phablet"
-	deviceTypeTablet            = "Tablet"
-	deviceTypeDesktop           = "Desktop"
-	deviceTypeConsole           = "Console"
-	deviceTypeTV                = "TV"
-	deviceTypeCamera            = "Camera"
-	deviceTypeCarBrowser        = "Car Browser"
-	deviceTypePortableMedia     = "Portable Media Player"
-	deviceTypeSmartDisplay      = "Smart Display"
-	deviceTypeSmartSpeaker      = "Smart Speaker"
-	deviceTypePeripheral        = "Peripheral"
-	deviceTypeWearable          = "Wearable"
 	estimatedDeviceRuleCapacity = 2048
 	yamlMappingPairStride       = 2
 )
@@ -96,15 +82,17 @@ func parseDeviceFromRule(ua string, rule deviceRule) (Device, bool, error) {
 func applyNestedDeviceRules(
 	ua string,
 	modelRules []deviceModelRule,
-	brand, currentType, currentModel string,
-) (deviceType, model string, err error) {
+	brand string,
+	currentType DeviceType,
+	currentModel string,
+) (deviceType DeviceType, model string, err error) {
 	deviceType = currentType
 	model = currentModel
 
 	for _, nested := range modelRules {
 		nestedMatch, nestedOK, nestedErr := matchRegexp2String(nested.pattern, ua)
 		if nestedErr != nil {
-			return Unknown, Unknown, fmt.Errorf("match nested device rule for brand %q: %w", brand, nestedErr)
+			return DeviceTypeUnknown, "", fmt.Errorf("match nested device rule for brand %q: %w", brand, nestedErr)
 		}
 		if !nestedOK {
 			continue
@@ -236,51 +224,48 @@ func deviceRuleSources() []string {
 	}
 }
 
-func normalizeDeviceType(raw string) string {
+func normalizeDeviceType(raw string) DeviceType {
 	normalized := strings.TrimSpace(strings.ToLower(strings.ReplaceAll(raw, "_", " ")))
 	if normalized == "" {
-		return Unknown
+		return DeviceTypeUnknown
 	}
 
 	switch normalized {
 	case "smartphone":
-		return deviceTypeSmartphone
+		return DeviceTypeSmartphone
 	case "feature phone":
-		return deviceTypeFeaturePhone
+		return DeviceTypeFeaturePhone
 	case "phablet":
-		return deviceTypePhablet
+		return DeviceTypePhablet
 	case "tablet":
-		return deviceTypeTablet
+		return DeviceTypeTablet
 	case "desktop":
-		return deviceTypeDesktop
+		return DeviceTypeDesktop
 	case "console":
-		return deviceTypeConsole
+		return DeviceTypeConsole
 	case "tv":
-		return deviceTypeTV
+		return DeviceTypeTV
 	case "camera":
-		return deviceTypeCamera
+		return DeviceTypeCamera
 	case "car browser":
-		return deviceTypeCarBrowser
+		return DeviceTypeCarBrowser
 	case "portable media player":
-		return deviceTypePortableMedia
+		return DeviceTypePortableMedia
 	case "smart display":
-		return deviceTypeSmartDisplay
+		return DeviceTypeSmartDisplay
 	case "smart speaker":
-		return deviceTypeSmartSpeaker
+		return DeviceTypeSmartSpeaker
 	case "peripheral":
-		return deviceTypePeripheral
+		return DeviceTypePeripheral
 	case "wearable":
-		return deviceTypeWearable
+		return DeviceTypeWearable
 	default:
-		return titleCaseWords(normalized)
+		return DeviceType(titleCaseWords(normalized))
 	}
 }
 
 func normalizeModel(value string) string {
 	value = strings.TrimSpace(value)
-	if value == "" {
-		return Unknown
-	}
 	return strings.Join(strings.Fields(value), " ")
 }
 

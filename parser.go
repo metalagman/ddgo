@@ -95,22 +95,16 @@ func parseBotLegacy(ua string) Bot {
 			IsBot:    true,
 			Name:     "Generic Bot",
 			Category: "Bot",
-			URL:      Unknown,
-			Producer: Producer{
-				Name: Unknown,
-				URL:  Unknown,
-			},
+			URL:      "",
+			Producer: Producer{},
 		}
 	default:
 		return Bot{
 			IsBot:    false,
-			Name:     Unknown,
-			Category: Unknown,
-			URL:      Unknown,
-			Producer: Producer{
-				Name: Unknown,
-				URL:  Unknown,
-			},
+			Name:     "",
+			Category: "",
+			URL:      "",
+			Producer: Producer{},
 		}
 	}
 }
@@ -183,7 +177,7 @@ func parseLegacyLibraryClient(ua string) (Client, bool) {
 
 func browserClient(name, version, engine, engineVersion string) Client {
 	return Client{
-		Type:          "Browser",
+		Type:          ClientTypeBrowser,
 		Name:          name,
 		Version:       version,
 		Engine:        engine,
@@ -193,55 +187,55 @@ func browserClient(name, version, engine, engineVersion string) Client {
 
 func libraryClient(name, version string) Client {
 	return Client{
-		Type:          "Library",
+		Type:          ClientTypeLibrary,
 		Name:          name,
 		Version:       version,
-		Engine:        Unknown,
-		EngineVersion: Unknown,
+		Engine:        "",
+		EngineVersion: "",
 	}
 }
 
 func parseOSLegacy(ua string) OS {
 	if matches := reOSWindows.FindStringSubmatch(ua); len(matches) > 1 {
 		return OS{
-			Name:     "Windows",
+			Name:     OSNameWindows,
 			Version:  mapWindowsVersion(matches[1]),
 			Platform: windowsPlatform(ua),
 		}
 	}
 	if matches := reOSAndroid.FindStringSubmatch(ua); len(matches) > 1 {
 		return OS{
-			Name:     "Android",
+			Name:     OSNameAndroid,
 			Version:  matches[1],
-			Platform: "ARM",
+			Platform: PlatformARM,
 		}
 	}
 	if matches := reOSIOS.FindStringSubmatch(ua); len(matches) > 1 {
 		return OS{
-			Name:     "iOS",
+			Name:     OSNameIOS,
 			Version:  strings.ReplaceAll(matches[1], "_", "."),
-			Platform: "ARM",
+			Platform: PlatformARM,
 		}
 	}
 	if matches := reOSMac.FindStringSubmatch(ua); len(matches) > 1 {
 		return OS{
-			Name:     "macOS",
+			Name:     OSNameMacOS,
 			Version:  strings.ReplaceAll(matches[1], "_", "."),
-			Platform: "x64",
+			Platform: PlatformX64,
 		}
 	}
 	if strings.Contains(ua, "Linux") {
 		return OS{
-			Name:     "Linux",
-			Version:  Unknown,
-			Platform: "x64",
+			Name:     OSNameLinux,
+			Version:  "",
+			Platform: PlatformX64,
 		}
 	}
 
 	return OS{
-		Name:     Unknown,
-		Version:  Unknown,
-		Platform: Unknown,
+		Name:     OSNameUnknown,
+		Version:  "",
+		Platform: PlatformUnknown,
 	}
 }
 
@@ -249,24 +243,24 @@ func parseDeviceLegacy(ua string) Device {
 	switch {
 	case strings.Contains(ua, "iPad"):
 		return Device{
-			Type:  "Tablet",
+			Type:  DeviceTypeTablet,
 			Brand: "Apple",
 			Model: "iPad",
 		}
 	case strings.Contains(ua, "iPhone"):
 		return Device{
-			Type:  "Smartphone",
+			Type:  DeviceTypeSmartphone,
 			Brand: "Apple",
 			Model: "iPhone",
 		}
 	case strings.Contains(ua, "Android"):
-		deviceType := "Tablet"
+		deviceType := DeviceTypeTablet
 		if strings.Contains(ua, "Mobile") {
-			deviceType = "Smartphone"
+			deviceType = DeviceTypeSmartphone
 		}
 
-		brand := Unknown
-		model := Unknown
+		brand := ""
+		model := ""
 		if matches := reSamsungModel.FindStringSubmatch(ua); len(matches) > 1 {
 			brand = "Samsung"
 			model = matches[1]
@@ -282,26 +276,22 @@ func parseDeviceLegacy(ua string) Device {
 		}
 	case strings.Contains(ua, "Windows NT"), strings.Contains(ua, "Macintosh"), strings.Contains(ua, "X11; Linux"):
 		return Device{
-			Type:  "Desktop",
-			Brand: Unknown,
-			Model: Unknown,
+			Type: DeviceTypeDesktop,
 		}
 	default:
 		return Device{
-			Type:  Unknown,
-			Brand: Unknown,
-			Model: Unknown,
+			Type: DeviceTypeUnknown,
 		}
 	}
 }
 
 func unknownClient() Client {
 	return Client{
-		Type:          Unknown,
-		Name:          Unknown,
-		Version:       Unknown,
-		Engine:        Unknown,
-		EngineVersion: Unknown,
+		Type:          ClientTypeUnknown,
+		Name:          "",
+		Version:       "",
+		Engine:        "",
+		EngineVersion: "",
 	}
 }
 
@@ -328,11 +318,11 @@ func mapWindowsVersion(v string) string {
 	}
 }
 
-func windowsPlatform(ua string) string {
+func windowsPlatform(ua string) Platform {
 	switch {
 	case strings.Contains(ua, "Win64"), strings.Contains(ua, "x64"), strings.Contains(ua, "WOW64"):
-		return "x64"
+		return PlatformX64
 	default:
-		return "x86"
+		return PlatformX86
 	}
 }

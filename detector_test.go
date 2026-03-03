@@ -25,16 +25,16 @@ func TestParseDefaults(t *testing.T) {
 	if result.Bot.IsBot {
 		t.Fatal("expected default IsBot=false")
 	}
-	if result.Bot.Name != Unknown {
+	if result.Bot.Name != "" {
 		t.Fatalf("unexpected bot name %q", result.Bot.Name)
 	}
-	if result.Client.Name != Unknown {
+	if result.Client.Name != "" {
 		t.Fatalf("unexpected client name %q", result.Client.Name)
 	}
-	if result.OS.Name != Unknown {
+	if result.OS.Name != OSNameUnknown {
 		t.Fatalf("unexpected os name %q", result.OS.Name)
 	}
-	if result.Device.Type != Unknown {
+	if result.Device.Type != DeviceTypeUnknown {
 		t.Fatalf("unexpected device type %q", result.Device.Type)
 	}
 }
@@ -161,7 +161,7 @@ func TestParseGooglebot(t *testing.T) {
 	if result.Bot.Name != "Googlebot" {
 		t.Fatalf("unexpected bot name %q", result.Bot.Name)
 	}
-	if result.Client.Name != Unknown {
+	if result.Client.Name != "" {
 		t.Fatalf("expected unknown client for bot, got %q", result.Client.Name)
 	}
 	if result.Device.Type != "Bot" {
@@ -221,7 +221,7 @@ func TestParseIPhoneSafari(t *testing.T) {
 	if result.OS.Name != "iOS" || result.OS.Version != "17.3.1" {
 		t.Fatalf("unexpected os %+v", result.OS)
 	}
-	if result.Device.Brand != "Apple" || result.Device.Model == Unknown {
+	if result.Device.Brand != "Apple" || result.Device.Model == "" {
 		t.Fatalf("unexpected device %+v", result.Device)
 	}
 }
@@ -331,7 +331,7 @@ func TestParseWithClientHintsBotPrecedence(t *testing.T) {
 	if !result.Bot.IsBot {
 		t.Fatal("expected bot detection")
 	}
-	if result.Client.Name != Unknown {
+	if result.Client.Name != "" {
 		t.Fatalf("expected unknown client for bot, got %q", result.Client.Name)
 	}
 	if result.Device.Type != "Bot" {

@@ -156,14 +156,10 @@ func trimUserAgentWhitespace(userAgent string) string {
 func deviceForBot(bot Bot) Device {
 	if bot.IsBot {
 		return Device{
-			Type:  "Bot",
-			Brand: Unknown,
-			Model: Unknown,
+			Type: DeviceTypeBot,
 		}
 	}
 	return Device{
-		Type:  Unknown,
-		Brand: Unknown,
-		Model: Unknown,
+		Type: DeviceTypeUnknown,
 	}
 }

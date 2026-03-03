@@ -68,8 +68,5 @@ func loadBotRules(files map[string]string) ([]botRule, error) {
 
 func normalizeUnknownString(value string) string {
 	value = strings.TrimSpace(value)
-	if value == "" {
-		return Unknown
-	}
 	return value
 }

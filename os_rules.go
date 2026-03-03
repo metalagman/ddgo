@@ -53,9 +53,9 @@ func parseOSSnapshot(runtime *parserRuntime, ua string) (OS, bool, error) {
 }
 
 func buildOSFromRule(rule osRule, ua string, match *regexp2.Match) (OS, error) {
-	name := normalizeRuleField(expandRuleTemplate(rule.nameTemplate, match))
+	name := normalizeOSNameValue(OSName(normalizeRuleField(expandRuleTemplate(rule.nameTemplate, match))))
 	version := normalizeRuleVersion(expandRuleTemplate(rule.versionTemplate, match))
-	if version == Unknown {
+	if version == "" {
 		resolvedVersion, err := resolveOSNestedVersion(rule.versions, ua)
 		if err != nil {
 			return OS{}, err
@@ -83,7 +83,7 @@ func resolveOSNestedVersion(versionRules []osVersionRule, ua string) (string, er
 		}
 
 		version := expandRuleTemplate(nested.versionTemplate, nestedMatch)
-		if normalizeRuleVersion(version) != Unknown {
+		if normalizeRuleVersion(version) != "" {
 			return version, nil
 		}
 	}
@@ -146,35 +146,35 @@ func compileOSVersionRules(rawRules []osYAMLVersionRule) ([]osVersionRule, error
 	return versionRules, nil
 }
 
-func detectOSPlatform(ua, osName string) string {
+func detectOSPlatform(ua string, osName OSName) Platform {
 	lowerUA := strings.ToLower(ua)
 	if platform := platformFromUserAgent(lowerUA); platform != "" {
 		return platform
 	}
 
-	lowerOS := strings.ToLower(osName)
+	lowerOS := strings.ToLower(string(osName))
 	switch {
 	case strings.Contains(lowerOS, "android"),
 		strings.Contains(lowerOS, "ios"),
 		strings.Contains(lowerOS, "ipad"),
 		strings.Contains(lowerOS, "watchos"),
 		strings.Contains(lowerOS, "harmony"):
-		return "ARM"
+		return PlatformARM
 	case strings.Contains(lowerOS, "windows"):
 		return windowsPlatform(ua)
 	default:
-		return Unknown
+		return PlatformUnknown
 	}
 }
 
-func platformFromUserAgent(lowerUA string) string {
+func platformFromUserAgent(lowerUA string) Platform {
 	switch {
 	case hasARMMarker(lowerUA):
-		return "ARM"
+		return PlatformARM
 	case hasX64Marker(lowerUA):
-		return "x64"
+		return PlatformX64
 	case hasX86Marker(lowerUA):
-		return "x86"
+		return PlatformX86
 	default:
 		return ""
 	}

@@ -26,7 +26,7 @@ type clientRule struct {
 }
 
 type clientRuleSet struct {
-	clientType string
+	clientType ClientType
 	rules      []clientRule
 }
 
@@ -42,7 +42,7 @@ type clientEngineRule struct {
 
 type clientRuleSource struct {
 	path       string
-	clientType string
+	clientType ClientType
 }
 
 var (
@@ -93,7 +93,7 @@ func parseClientFromRuleSet(set clientRuleSet, ua string, runtime *parserRuntime
 }
 
 func buildClientFromMatch(
-	clientType string,
+	clientType ClientType,
 	rule clientRule,
 	ua string,
 	match *regexp2.Match,
@@ -112,8 +112,8 @@ func buildClientFromMatch(
 	}
 	engine = normalizeRuleField(engine)
 
-	engineVersion := Unknown
-	if engine != Unknown {
+	engineVersion := ""
+	if engine != "" {
 		engineVersion = normalizeRuleVersion(extractEngineVersion(ua, engine, version))
 	}
 
@@ -179,12 +179,12 @@ func decodeClientRules(content, sourcePath string) ([]clientRule, error) {
 
 func clientRuleSources() []clientRuleSource {
 	return []clientRuleSource{
-		{path: "client/feed_readers.yml", clientType: "Feed Reader"},
-		{path: "client/mobile_apps.yml", clientType: "Mobile App"},
-		{path: "client/mediaplayers.yml", clientType: "Media Player"},
-		{path: "client/pim.yml", clientType: "PIM"},
-		{path: "client/browsers.yml", clientType: "Browser"},
-		{path: "client/libraries.yml", clientType: "Library"},
+		{path: "client/feed_readers.yml", clientType: ClientTypeFeedReader},
+		{path: "client/mobile_apps.yml", clientType: ClientTypeMobileApp},
+		{path: "client/mediaplayers.yml", clientType: ClientTypeMediaPlayer},
+		{path: "client/pim.yml", clientType: ClientTypePIM},
+		{path: "client/browsers.yml", clientType: ClientTypeBrowser},
+		{path: "client/libraries.yml", clientType: ClientTypeLibrary},
 	}
 }
 
@@ -223,7 +223,7 @@ func detectClientEngine(ua string, rules []clientEngineRule) (string, error) {
 	for _, rule := range rules {
 		_, ok, matchErr := matchRegexp2String(rule.pattern, ua)
 		if matchErr != nil {
-			return Unknown, fmt.Errorf("match client engine rule: %w", matchErr)
+			return "", fmt.Errorf("match client engine rule: %w", matchErr)
 		}
 		if ok {
 			return rule.name, nil
@@ -246,7 +246,7 @@ func detectClientEngine(ua string, rules []clientEngineRule) (string, error) {
 	case strings.Contains(ua, "Presto/"):
 		return "Presto", nil
 	default:
-		return Unknown, nil
+		return "", nil
 	}
 }
 
@@ -261,7 +261,7 @@ func extractEngineVersion(ua, engineName, clientVersion string) string {
 		if version != "" {
 			return version
 		}
-		if clientVersion != Unknown {
+		if clientVersion != "" {
 			return clientVersion
 		}
 	case "webkit":
