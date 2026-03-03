@@ -37,17 +37,6 @@ jobs:
       - name: Race tests
         run: go test -race ./...
 
-      - name: Sync artifact verification
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          upstream_repo=$(python3 -c 'import json;print(json.load(open("compliance/provenance.json"))["sources"][0]["name"])')
-
-          go run ./cmd/ddsync verify \
-            --upstream-repo "${upstream_repo}" \
-            --json
-
       - name: Compliance checks
         shell: bash
         run: |

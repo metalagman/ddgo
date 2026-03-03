@@ -1,0 +1,63 @@
+name: Upstream Sync
+
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: upstream-sync
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Update snapshot from upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          go run ./cmd/ddsync update --json > /tmp/ddsync-update.json
+
+      - name: Verify generated artifacts
+        run: go run ./cmd/ddsync verify --json
+
+      - name: Extract upstream version
+        id: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(python3 -c 'import json;print(json.load(open("/tmp/ddsync-update.json"))["upstream_version"])')"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create or update upstream sync PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/upstream-sync
+          base: master
+          delete-branch: true
+          commit-message: "chore: sync upstream snapshot to ${{ steps.upstream.outputs.version }}"
+          title: "chore: sync upstream snapshot to ${{ steps.upstream.outputs.version }}"
+          body: |
+            Automated upstream snapshot sync.
+
+            - Upstream repo: `matomo-org/device-detector`
+            - Upstream version: `${{ steps.upstream.outputs.version }}`
+            - Command: `go run ./cmd/ddsync update --json`
+          add-paths: |
+            sync/current/**
+            sync/compiled.json
+            sync/manifest.json
+            compliance/provenance.json
