@@ -4,7 +4,7 @@ import "testing"
 
 func BenchmarkParseFirefox(b *testing.B) {
 	b.ReportAllocs()
-	detector, err := New(WithResultCacheSize(0))
+	detector, err := New(WithResultCache(nil))
 	if err != nil {
 		b.Fatalf("New() failed: %v", err)
 	}
@@ -18,7 +18,7 @@ func BenchmarkParseFirefox(b *testing.B) {
 
 func BenchmarkParseGooglebot(b *testing.B) {
 	b.ReportAllocs()
-	detector, err := New(WithResultCacheSize(0))
+	detector, err := New(WithResultCache(nil))
 	if err != nil {
 		b.Fatalf("New() failed: %v", err)
 	}
@@ -32,7 +32,7 @@ func BenchmarkParseGooglebot(b *testing.B) {
 
 func BenchmarkParseCachedFirefox(b *testing.B) {
 	b.ReportAllocs()
-	detector, err := New(WithResultCacheSize(256))
+	detector, err := New(WithResultCache(NewLRUResultCache(256)))
 	if err != nil {
 		b.Fatalf("New() failed: %v", err)
 	}

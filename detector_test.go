@@ -75,10 +75,10 @@ func TestWithMaxUserAgentLenIgnoresInvalidValue(t *testing.T) {
 	}
 }
 
-func TestWithResultCacheSizeZeroDisablesCache(t *testing.T) {
+func TestWithResultCacheNilDisablesCache(t *testing.T) {
 	t.Parallel()
 
-	detector := newTestDetector(t, WithResultCacheSize(0))
+	detector := newTestDetector(t, WithResultCache(nil))
 	if detector.cache != nil {
 		t.Fatal("expected cache to be disabled")
 	}
@@ -86,6 +86,15 @@ func TestWithResultCacheSizeZeroDisablesCache(t *testing.T) {
 	result := mustParse(t, detector, "Mozilla/5.0")
 	if result.UserAgent != "Mozilla/5.0" {
 		t.Fatalf("unexpected parse result %+v", result)
+	}
+}
+
+func TestDefaultDetectorHasCache(t *testing.T) {
+	t.Parallel()
+
+	detector := newTestDetector(t)
+	if detector.cache == nil {
+		t.Fatal("expected default cache to be enabled")
 	}
 }
 
@@ -104,15 +113,6 @@ func TestWithResultCacheInjectsCustomCache(t *testing.T) {
 	}
 	if cache.setCalls == 0 {
 		t.Fatal("expected detector to use custom cache Set")
-	}
-}
-
-func TestWithResultCacheNilDisablesCaching(t *testing.T) {
-	t.Parallel()
-
-	detector := newTestDetector(t, WithResultCache(nil))
-	if detector.cache != nil {
-		t.Fatal("expected nil custom cache to disable caching")
 	}
 }
 
@@ -379,7 +379,7 @@ func TestParseNormalizesWhitespace(t *testing.T) {
 func TestParseConcurrentAccess(t *testing.T) {
 	t.Parallel()
 
-	detector := newTestDetector(t, WithResultCacheSize(32))
+	detector := newTestDetector(t, WithResultCache(NewLRUResultCache(32)))
 	userAgents := []string{
 		"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",

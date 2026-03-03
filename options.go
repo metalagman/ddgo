@@ -8,9 +8,7 @@ const (
 type options struct {
 	maxUserAgentLen int
 	trimWhitespace  bool
-	resultCacheSize int
 	resultCache     ResultCache
-	cacheSet        bool
 }
 
 // Option configures Detector behavior.
@@ -20,7 +18,7 @@ func defaultOptions() options {
 	return options{
 		maxUserAgentLen: defaultMaxUserAgentLen,
 		trimWhitespace:  true,
-		resultCacheSize: defaultResultCacheSize,
+		resultCache:     NewLRUResultCache(defaultResultCacheSize),
 	}
 }
 
@@ -45,39 +43,15 @@ func WithUserAgentTrimming(enabled bool) Option {
 	}
 }
 
-// WithResultCacheSize configures the default bounded in-memory parse result
-// cache.
-//
-// Deprecated: prefer WithResultCache(NewLRUResultCache(size)) for explicit
-// cache implementation selection.
-//
-// Set to 0 to disable caching. Negative values are ignored.
-func WithResultCacheSize(size int) Option {
-	return func(cfg *options) {
-		if size < 0 {
-			return
-		}
-		cfg.resultCacheSize = size
-	}
-}
-
 // WithResultCache configures a custom parse result cache implementation.
 //
 // Passing nil explicitly disables caching.
 func WithResultCache(cache ResultCache) Option {
 	return func(cfg *options) {
 		cfg.resultCache = cache
-		cfg.cacheSet = true
 	}
 }
 
 func (cfg options) cache() ResultCache {
-	if cfg.cacheSet {
-		return cfg.resultCache
-	}
-	cache := newResultCache(cfg.resultCacheSize)
-	if cache == nil {
-		return nil
-	}
-	return cache
+	return cfg.resultCache
 }

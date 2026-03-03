@@ -35,14 +35,6 @@ func NewLRUResultCache(capacity int) ResultCache {
 	return newLRUResultCache(capacity)
 }
 
-func newResultCache(capacity int) *lruResultCache {
-	cache := newLRUResultCache(capacity)
-	if cache == nil {
-		return nil
-	}
-	return cache
-}
-
 func newLRUResultCache(capacity int) *lruResultCache {
 	if capacity <= 0 {
 		return nil
