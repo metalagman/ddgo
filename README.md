@@ -33,6 +33,10 @@ go get github.com/metalagman/ddgo
 
 ## Library usage
 
+The sections below map to runnable examples in [`example_test.go`](example_test.go).
+
+### `New` + `Parse` (`ExampleNew`)
+
 ```go
 import "github.com/metalagman/ddgo"
 
@@ -46,19 +50,12 @@ if err != nil {
 }
 // result.Client.Name == "Firefox"
 // result.Client.Version == "124.0"
-```
-
-Bot + client + OS + device fields:
-
-```go
-result, _ := detector.Parse("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0")
 // result.Bot.IsBot == false
-// result.Client.Name == "Firefox"
 // result.OS.Name == "Windows"
 // result.Device.Type == "Desktop"
 ```
 
-Bot detection:
+### `Detector.Parse` bot detection (`ExampleDetector_Parse`)
 
 ```go
 result, _ := detector.Parse("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
@@ -67,7 +64,7 @@ result, _ := detector.Parse("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www
 // result.Device.Type == "Bot"
 ```
 
-Client hints via structured input:
+### `Detector.ParseWithClientHints` (`ExampleDetector_ParseWithClientHints`)
 
 ```go
 mobile := true
@@ -84,7 +81,7 @@ result, _ := detector.ParseWithClientHints("Mozilla/5.0", hints)
 // result.Device.Model == "SM-G991B"
 ```
 
-Client hints from headers:
+### `Detector.ParseWithHeaders` (`ExampleDetector_ParseWithHeaders`)
 
 ```go
 headers := map[string]string{
@@ -99,19 +96,23 @@ result, _ := detector.ParseWithHeaders("Mozilla/5.0", headers)
 // result.Device.Type == "Desktop"
 ```
 
-Parser options:
+### `WithMaxUserAgentLen` (`ExampleWithMaxUserAgentLen`)
 
 ```go
 detector, _ = ddgo.New(ddgo.WithMaxUserAgentLen(7))
 result, _ = detector.Parse("Mozilla/5.0")
 // result.UserAgent == "Mozilla"
+```
 
+### `WithUserAgentTrimming` (`ExampleWithUserAgentTrimming`)
+
+```go
 detector, _ = ddgo.New(ddgo.WithUserAgentTrimming(false))
 result, _ = detector.Parse("  Mozilla/5.0  ")
 // result.UserAgent == "  Mozilla/5.0  "
 ```
 
-Parse only client hints:
+### `ParseClientHintsFromHeaders` (`ExampleParseClientHintsFromHeaders`)
 
 ```go
 headers := map[string]string{
@@ -124,7 +125,7 @@ hints := ddgo.ParseClientHintsFromHeaders(headers)
 // hints.Platform == "Android"
 ```
 
-Cache configuration:
+### Cache configuration
 
 ```go
 // Preferred: choose implementation explicitly via the cache interface.
