@@ -31,7 +31,6 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 2. Keep changes scoped and deterministic (no hidden generated drift).
 3. Run relevant quality gates before finishing:
    - `go test ./...`
-   - `go test ./... -run '^Example'`
    - `go test -race ./...`
    - `go mod tidy && git diff --exit-code go.mod go.sum`
    - `go run ./cmd/ddsync verify --json` (when snapshot/artifact code is touched)
