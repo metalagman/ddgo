@@ -1,3 +1,6 @@
+//go:build fulltests
+// +build fulltests
+
 package ddgo
 
 import (

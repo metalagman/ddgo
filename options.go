@@ -70,5 +70,9 @@ func (cfg options) cache() ResultCache {
 	if cfg.cacheSet {
 		return cfg.resultCache
 	}
-	return newResultCache(cfg.resultCacheSize)
+	cache := newResultCache(cfg.resultCacheSize)
+	if cache == nil {
+		return nil
+	}
+	return cache
 }
