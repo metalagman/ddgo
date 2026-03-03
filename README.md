@@ -161,6 +161,25 @@ func (m *myCache) Set(key string, result ddgo.Result) {}
 detector, _ := ddgo.New(ddgo.WithResultCache(&myCache{}))
 ```
 
+## Benchmark snapshot
+
+Measured on Linux/amd64 (AMD Ryzen 7 PRO 7840U), March 3, 2026.
+
+| Scenario | Throughput/Latency | Memory | Allocations |
+| --- | --- | --- | --- |
+| `Parse` typical desktop browser UA (`BenchmarkParseFirefox`) | ~8.2-8.6 ms/op | ~14.6-15.2 KB/op | ~75-77 allocs/op |
+| `Parse` common bot UA (`BenchmarkParseGooglebot`) | ~1.34-1.37 ms/op | ~1.63-1.65 KB/op | 14 allocs/op |
+| `Parse` with warm cache hit (`BenchmarkParseCachedFirefox`) | ~1.10-1.15 us/op | 1296 B/op | 13 allocs/op |
+| `ParseWithHeaders` (`BenchmarkParseWithHeaders`) | ~1.44-1.67 ms/op | ~3.6-3.7 KB/op | 35 allocs/op |
+
+Run benchmarks locally:
+
+```bash
+go test -run '^$' -bench 'BenchmarkParse' -benchmem .
+```
+
+Full performance notes are in [`PERFORMANCE.md`](PERFORMANCE.md).
+
 ## Examples
 
 Runnable examples are in [`example_test.go`](example_test.go) (`Example*` functions).
