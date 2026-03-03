@@ -26,6 +26,28 @@ if err != nil {
 // result.Client.Version == "124.0"
 ```
 
+Unknown value semantics:
+
+```go
+result, _ := detector.Parse("Mozilla/5.0")
+// enum-like fields use typed unknown constants:
+// result.Client.Type == ddgo.ClientTypeUnknown
+// result.OS.Name == ddgo.OSNameUnknown
+// result.Device.Type == ddgo.DeviceTypeUnknown
+//
+// open text fields stay empty when unavailable:
+// result.Client.Name == ""
+// result.Bot.Name == ""
+```
+
+JSON compatibility:
+
+```go
+// Internal model uses empty strings for unknown text fields.
+// JSON marshal/unmarshal keeps wire compatibility with historical payloads:
+// empty text -> "Unknown" on marshal, and "Unknown" -> empty text on unmarshal.
+```
+
 Bot detection:
 
 ```go
