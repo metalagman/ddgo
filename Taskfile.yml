@@ -1,0 +1,22 @@
+version: "3"
+
+tasks:
+  test:
+    desc: Run project test suite
+    cmds:
+      - go test ./...
+
+  lint:
+    desc: Run golangci-lint with project config
+    cmds:
+      - golangci-lint run --timeout 5m
+
+  codex:test:
+    desc: Run tests with sandbox-safe cache directories
+    cmds:
+      - GOCACHE=/tmp/go-build-cache go test ./...
+
+  codex:lint:
+    desc: Run golangci-lint with sandbox-safe cache directories
+    cmds:
+      - GOCACHE=/tmp/go-build-cache GOLANGCI_LINT_CACHE=/tmp/golangci-lint-cache golangci-lint run --timeout 5m

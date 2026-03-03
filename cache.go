@@ -13,7 +13,8 @@ type ResultCache interface {
 	Set(key string, result Result)
 }
 
-type lruResultCache struct {
+// LRUResultCache is a bounded in-memory LRU cache implementation.
+type LRUResultCache struct {
 	mu       sync.Mutex
 	capacity int
 	order    *list.List
@@ -28,25 +29,26 @@ type cacheEntry struct {
 // NewLRUResultCache creates a bounded in-memory LRU parse result cache.
 //
 // Returns nil when capacity is <= 0.
-func NewLRUResultCache(capacity int) ResultCache {
+func NewLRUResultCache(capacity int) *LRUResultCache {
 	if capacity <= 0 {
 		return nil
 	}
 	return newLRUResultCache(capacity)
 }
 
-func newLRUResultCache(capacity int) *lruResultCache {
+func newLRUResultCache(capacity int) *LRUResultCache {
 	if capacity <= 0 {
 		return nil
 	}
-	return &lruResultCache{
+	return &LRUResultCache{
 		capacity: capacity,
 		order:    list.New(),
 		entries:  make(map[string]*list.Element, capacity),
 	}
 }
 
-func (c *lruResultCache) Get(key string) (Result, bool) {
+// Get returns a cached result for key and updates recency on hit.
+func (c *LRUResultCache) Get(key string) (Result, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -58,7 +60,8 @@ func (c *lruResultCache) Get(key string) (Result, bool) {
 	return elem.Value.(cacheEntry).result, true
 }
 
-func (c *lruResultCache) Set(key string, result Result) {
+// Set stores a result for key and evicts the least-recently-used entry when full.
+func (c *LRUResultCache) Set(key string, result Result) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
