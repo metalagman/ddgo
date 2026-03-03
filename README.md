@@ -133,6 +133,36 @@ detector, _ = ddgo.New(ddgo.WithResultCacheSize(512))
 // detector, _ = ddgo.New(ddgo.WithResultCache(myCache))
 ```
 
+Independent caching interface:
+
+```go
+type ResultCache interface {
+    Get(key string) (ddgo.Result, bool)
+    Set(key string, result ddgo.Result)
+}
+```
+
+Built-in cache implementations:
+
+```go
+// Bounded LRU-style cache:
+detector, _ := ddgo.New(ddgo.WithResultCacheSize(512))
+
+// Unbounded in-memory cache:
+detector, _ = ddgo.New(ddgo.WithResultCache(ddgo.NewMemoryResultCache()))
+```
+
+Custom cache implementation:
+
+```go
+type myCache struct{}
+
+func (m *myCache) Get(key string) (ddgo.Result, bool) { return ddgo.Result{}, false }
+func (m *myCache) Set(key string, result ddgo.Result) {}
+
+detector, _ := ddgo.New(ddgo.WithResultCache(&myCache{}))
+```
+
 ## Data source and sync model
 
 - Upstream source: `matomo-org/device-detector` regex definitions.
