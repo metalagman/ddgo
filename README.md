@@ -174,6 +174,5 @@ detector, _ := ddgo.New(ddgo.WithResultCache(&myCache{}))
 - License and notice references:
   - `LICENSE`
   - `THIRD_PARTY_NOTICES.md`
-  - `licenses/LGPL-3.0-or-later.txt`
 
 Runnable examples are in [`example_test.go`](example_test.go) (`Example*` functions).

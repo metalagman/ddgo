@@ -50,4 +50,3 @@ jobs:
 
           test -f LICENSE
           test -f THIRD_PARTY_NOTICES.md
-          test -f licenses/LGPL-3.0-or-later.txt

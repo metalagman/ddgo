@@ -50,7 +50,6 @@ UPDATE_GOLDEN=1 go test ./... -run TestParityGoldenFixtures
 - Project source code is licensed under LGPL-3.0-or-later (see `LICENSE`).
 - Snapshot-derived third-party data notices are tracked in:
   - `THIRD_PARTY_NOTICES.md`
-  - `licenses/LGPL-3.0-or-later.txt`
 
 When redistributing, keep project and third-party license/notice files together.
 

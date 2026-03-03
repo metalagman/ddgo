@@ -10,7 +10,6 @@ This repository includes data and compatibility behavior derived from third-part
 - Local usage:
   - Current mirrored `regexes/` snapshot inputs in `sync/current/`
   - Deterministic generated artifact in `sync/compiled.json`
-- License copy: `licenses/LGPL-3.0-or-later.txt`
 
 ## Redistribution Notes
 
