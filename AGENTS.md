@@ -2,6 +2,42 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
+## Project Goal
+
+`ddgo` is a Go user-agent detection library. The project goal is to:
+
+- Provide stable, deterministic parsing results for bot/client/os/device detection.
+- Keep behavior aligned with upstream Device Detector fixtures and parity tests.
+- Track and sync snapshot-derived data reproducibly via `ddsync`.
+
+## Project Structure
+
+- Library core:
+  - `detector.go`, `parser*.go`, `*_rules.go`, `hints.go`, `types.go`, `options.go`, `cache.go`
+- Embedded snapshot/runtime assets:
+  - `sync/compiled.json`, `snapshot_data.go`, `runtime_init.go`
+- Snapshot sync and artifact pipeline:
+  - `internal/ddsync/`
+- CLI for snapshot maintenance:
+  - `cmd/ddsync/`
+- Test suites and fixtures:
+  - `*_test.go`, `testdata/`, `sync/current/`
+- Compliance and licensing:
+  - `compliance/`, `licenses/`, `THIRD_PARTY_NOTICES.md`
+
+## Workflow
+
+1. Pick and claim work with `bd`.
+2. Keep changes scoped and deterministic (no hidden generated drift).
+3. Run relevant quality gates before finishing:
+   - `go test ./...`
+   - `go test ./... -run '^Example'`
+   - `go test -race ./...`
+   - `go mod tidy && git diff --exit-code go.mod go.sum`
+   - `go run ./cmd/ddsync verify --json` (when snapshot/artifact code is touched)
+4. Update docs/examples when behavior changes.
+5. Complete the session with the mandatory push flow below.
+
 ## Quick Reference
 
 ```bash
@@ -37,4 +73,3 @@ bd sync               # Sync with git
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
-
