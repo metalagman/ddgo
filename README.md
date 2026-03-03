@@ -1,4 +1,4 @@
-# ddgo
+# ddgo - Device Detector for Go
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/metalagman/ddgo)](https://goreportcard.com/report/github.com/metalagman/ddgo)
 [![Go Reference](https://pkg.go.dev/badge/github.com/metalagman/ddgo.svg)](https://pkg.go.dev/github.com/metalagman/ddgo)
@@ -128,9 +128,8 @@ hints := ddgo.ParseClientHintsFromHeaders(headers)
 Cache configuration:
 
 ```go
-detector, _ = ddgo.New(ddgo.WithResultCacheSize(512))
-// or provide custom cache implementation:
-// detector, _ = ddgo.New(ddgo.WithResultCache(myCache))
+// Preferred: choose implementation explicitly via the cache interface.
+detector, _ = ddgo.New(ddgo.WithResultCache(ddgo.NewLRUResultCache(512)))
 ```
 
 Independent caching interface:
@@ -146,7 +145,7 @@ Built-in cache implementations:
 
 ```go
 // Bounded LRU-style cache:
-detector, _ := ddgo.New(ddgo.WithResultCacheSize(512))
+detector, _ := ddgo.New(ddgo.WithResultCache(ddgo.NewLRUResultCache(512)))
 
 // Unbounded in-memory cache:
 detector, _ = ddgo.New(ddgo.WithResultCache(ddgo.NewMemoryResultCache()))

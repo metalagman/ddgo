@@ -25,6 +25,16 @@ type cacheEntry struct {
 	result Result
 }
 
+// NewLRUResultCache creates a bounded in-memory LRU parse result cache.
+//
+// Returns nil when capacity is <= 0.
+func NewLRUResultCache(capacity int) ResultCache {
+	if capacity <= 0 {
+		return nil
+	}
+	return newLRUResultCache(capacity)
+}
+
 func newResultCache(capacity int) *lruResultCache {
 	cache := newLRUResultCache(capacity)
 	if cache == nil {

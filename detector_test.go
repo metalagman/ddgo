@@ -136,6 +136,30 @@ func TestNewMemoryResultCache(t *testing.T) {
 	}
 }
 
+func TestNewLRUResultCache(t *testing.T) {
+	t.Parallel()
+
+	if cache := NewLRUResultCache(0); cache != nil {
+		t.Fatal("expected nil cache for non-positive capacity")
+	}
+
+	cache := NewLRUResultCache(2)
+	if cache == nil {
+		t.Fatal("expected non-nil LRU cache")
+	}
+
+	value := Result{UserAgent: "Mozilla/5.0"}
+	cache.Set("ua", value)
+
+	got, ok := cache.Get("ua")
+	if !ok {
+		t.Fatal("expected cached value from LRU cache")
+	}
+	if got.UserAgent != value.UserAgent {
+		t.Fatalf("unexpected cached value: %+v", got)
+	}
+}
+
 func TestParseOnNilDetector(t *testing.T) {
 	t.Parallel()
 

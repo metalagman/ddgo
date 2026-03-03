@@ -45,7 +45,12 @@ func WithUserAgentTrimming(enabled bool) Option {
 	}
 }
 
-// WithResultCacheSize configures a bounded in-memory parse result cache.
+// WithResultCacheSize configures the default bounded in-memory parse result
+// cache.
+//
+// Deprecated: prefer WithResultCache(NewLRUResultCache(size)) for explicit
+// cache implementation selection.
+//
 // Set to 0 to disable caching. Negative values are ignored.
 func WithResultCacheSize(size int) Option {
 	return func(cfg *options) {
