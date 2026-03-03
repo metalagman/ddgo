@@ -7,7 +7,7 @@
 [![version](https://img.shields.io/github/v/release/metalagman/ddgo?sort=semver)](https://github.com/metalagman/ddgo/releases)
 [![license](https://img.shields.io/github/license/metalagman/ddgo)](LICENSE)
 
-`ddgo` is a Go port of Matomo Device Detector with deterministic snapshot syncing and third-party provenance tracking.
+`ddgo` is a Go port of Matomo Device Detector.
 
 ## Library usage
 
@@ -93,24 +93,3 @@ hints := ddgo.ParseClientHintsFromHeaders(headers)
 ```
 
 Runnable examples are in [`example_test.go`](example_test.go) (`Example*` functions).
-
-## ddsync CLI (Cobra)
-
-`ddsync` mirrors upstream Device Detector regex data and generates deterministic artifacts.
-
-```bash
-go run ./cmd/ddsync update
-go run ./cmd/ddsync verify
-go run ./cmd/ddsync status
-```
-
-Additional commands:
-
-```bash
-go run ./cmd/ddsync version
-go run ./cmd/ddsync completion bash
-```
-
-Machine-readable output is available with `--json`.
-
-For development and contribution workflow, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
