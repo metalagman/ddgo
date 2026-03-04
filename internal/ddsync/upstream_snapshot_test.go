@@ -8,6 +8,59 @@ import (
 	"testing"
 )
 
+func TestSanitizeUpstreamTag(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "v-prefixed",
+			in:   "v6.5.0",
+			want: "v6.5.0",
+		},
+		{
+			name: "bare semver",
+			in:   "6.5.0",
+			want: "6.5.0",
+		},
+		{
+			name: "trim whitespace",
+			in:   "  6.5.0  ",
+			want: "6.5.0",
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := sanitizeUpstreamTag(tc.in)
+			if err != nil {
+				t.Fatalf("sanitizeUpstreamTag(%q) error = %v", tc.in, err)
+			}
+			if got != tc.want {
+				t.Fatalf("sanitizeUpstreamTag(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSanitizeUpstreamTagRejectsUnsupportedTag(t *testing.T) {
+	t.Parallel()
+
+	_, err := sanitizeUpstreamTag("v6.5.0-rc1")
+	if err == nil {
+		t.Fatal("sanitizeUpstreamTag() expected error for pre-release tag")
+	}
+	if !strings.Contains(err.Error(), "unsupported upstream tag") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestSyncSnapshotFromRepoURLCopiesRegexes(t *testing.T) {
 	t.Parallel()
 

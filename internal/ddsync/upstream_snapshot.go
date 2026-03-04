@@ -157,11 +157,12 @@ func parseGitHubRepoSlug(repoURL string) (string, error) {
 }
 
 func sanitizeUpstreamTag(tag string) (string, error) {
-	version, ok := parseStableSemver(tag)
+	safeTag := strings.TrimSpace(tag)
+	_, ok := parseStableSemver(safeTag)
 	if !ok {
 		return "", fmt.Errorf("%w: %q", errUnsupportedTag, tag)
 	}
-	return fmt.Sprintf("v%d.%d.%d", version.major, version.minor, version.patch), nil
+	return safeTag, nil
 }
 
 func clearDirectory(dir string) error {
