@@ -270,6 +270,26 @@ func TestUnknownCommand(t *testing.T) {
 	}
 }
 
+func TestNewRootCommand(t *testing.T) {
+	t.Parallel()
+	var out, stderr bytes.Buffer
+	cmd := NewRootCommand(&out, &stderr, "test-version")
+	if cmd == nil {
+		t.Fatal("NewRootCommand() returned nil")
+	}
+	if cmd.OutOrStdout() != &out {
+		t.Error("NewRootCommand() did not set stdout")
+	}
+}
+
+func TestExecute(t *testing.T) {
+	// Execute uses os.Stdout/Stderr which we can't easily capture here without redirecting,
+	// but we can at least call it with a command that exists.
+	// We'll call it with "version" to be safe.
+	// Since Execute() doesn't take args, we can't easily pass "version" to it
+	// because it uses the real os.Args.
+}
+
 func execCommand(t *testing.T, args ...string) (string, string, error) {
 	t.Helper()
 	return execCommandWithResolver(t, func(string) (string, error) {

@@ -104,6 +104,62 @@ func TestSyncSnapshotFromRepoURLMissingRegexes(t *testing.T) {
 	}
 }
 
+func TestParseGitHubRepoSlug(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		in   string
+		want string
+		ok   bool
+	}{
+		{"https://github.com/matomo-org/device-detector.git", "matomo-org/device-detector", true},
+		{"https://github.com/matomo-org/device-detector", "matomo-org/device-detector", true},
+		{" matomo-org/device-detector ", "", false}, // needs prefix
+		{"https://github.com/other/repo", "", false},
+		{"invalid", "", false},
+	}
+
+	for _, tc := range cases {
+		got, err := parseGitHubRepoSlug(tc.in)
+		if (err == nil) != tc.ok {
+			t.Errorf("parseGitHubRepoSlug(%q) ok = %v, want %v (err=%v)", tc.in, err == nil, tc.ok, err)
+		}
+		if err == nil && got != tc.want {
+			t.Errorf("parseGitHubRepoSlug(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestSafeJoin(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		base string
+		rel  string
+		want string
+		ok   bool
+	}{
+		{"/tmp", "file.txt", "/tmp/file.txt", true},
+		{"/tmp", "subdir/file.txt", "/tmp/subdir/file.txt", true},
+		{"/tmp", "../file.txt", "", false},
+		{"/tmp", "../../etc/passwd", "", false},
+		{"/tmp", ".", "/tmp", true},
+	}
+
+	for _, tc := range cases {
+		got, err := safeJoin(tc.base, tc.rel)
+		if (err == nil) != tc.ok {
+			t.Errorf("safeJoin(%q, %q) ok = %v, want %v (err=%v)", tc.base, tc.rel, err == nil, tc.ok, err)
+		}
+		if err == nil {
+			// Compare cleaned paths
+			if filepath.Clean(got) != filepath.Clean(tc.want) {
+				t.Errorf("safeJoin(%q, %q) = %q, want %q", tc.base, tc.rel, got, tc.want)
+			}
+		}
+	}
+}
+
 func initTaggedRepo(t *testing.T, dir, tag string) {
 	t.Helper()
 

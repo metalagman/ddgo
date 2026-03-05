@@ -1,6 +1,7 @@
 # ddgo - Device Detector for Go
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/metalagman/ddgo)](https://goreportcard.com/report/github.com/metalagman/ddgo)
+[![codecov](https://codecov.io/github/metalagman/ddgo/graph/badge.svg)](https://codecov.io/github/metalagman/ddgo)
 [![ci](https://github.com/metalagman/ddgo/actions/workflows/ci.yml/badge.svg)](https://github.com/metalagman/ddgo/actions/workflows/ci.yml)
 [![version](https://img.shields.io/github/v/release/metalagman/ddgo?sort=semver)](https://github.com/metalagman/ddgo/releases)
 [![license](https://img.shields.io/github/license/metalagman/ddgo)](LICENSE)

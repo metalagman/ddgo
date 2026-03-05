@@ -3,6 +3,7 @@ package ddgo
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/dlclark/regexp2"
@@ -14,7 +15,8 @@ type clientYAMLRule struct {
 	Name    string `yaml:"name"`
 	Version string `yaml:"version"`
 	Engine  struct {
-		Default string `yaml:"default"`
+		Default  string            `yaml:"default"`
+		Versions map[string]string `yaml:"versions"`
 	} `yaml:"engine"`
 }
 
@@ -23,6 +25,7 @@ type clientRule struct {
 	nameTemplate   string
 	versionPattern string
 	engineDefault  string
+	engineVersions map[string]string
 }
 
 type clientRuleSet struct {
@@ -103,7 +106,17 @@ func buildClientFromMatch(
 	name := normalizeRuleField(expandRuleTemplate(rule.nameTemplate, match))
 	version := normalizeRuleVersion(expandRuleTemplate(rule.versionPattern, match))
 
-	engine := strings.TrimSpace(rule.engineDefault)
+	engine := rule.engineDefault
+	if len(rule.engineVersions) > 0 && version != Unknown {
+		// Keys in engineVersions are not necessarily sorted in the YAML.
+		// We'll iterate and pick the engine for the highest version that is <= current version.
+		for v, e := range rule.engineVersions {
+			if compareVersions(version, v) >= 0 {
+				engine = e
+			}
+		}
+	}
+
 	var err error
 	if engine == "" {
 		engine, err = detectClientEngine(ua, uaRunes, runtime.clientEngines)
@@ -172,6 +185,7 @@ func decodeClientRules(content, sourcePath string) ([]clientRule, error) {
 			nameTemplate:   item.Name,
 			versionPattern: item.Version,
 			engineDefault:  item.Engine.Default,
+			engineVersions: item.Engine.Versions,
 		})
 	}
 
@@ -285,4 +299,26 @@ func extractEngineVersion(ua, engineName, clientVersion string) string {
 		return firstMatch(reEngineArachne, ua, "")
 	}
 	return ""
+}
+
+func compareVersions(v1, v2 string) int {
+	parts1 := strings.Split(v1, ".")
+	parts2 := strings.Split(v2, ".")
+
+	for i := 0; i < len(parts1) || i < len(parts2); i++ {
+		var n1, n2 int
+		if i < len(parts1) {
+			n1, _ = strconv.Atoi(parts1[i])
+		}
+		if i < len(parts2) {
+			n2, _ = strconv.Atoi(parts2[i])
+		}
+		if n1 < n2 {
+			return -1
+		}
+		if n1 > n2 {
+			return 1
+		}
+	}
+	return 0
 }

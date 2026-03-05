@@ -2,6 +2,7 @@ package ddsync
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -188,6 +189,116 @@ func TestStatusDetectsMissingUpstreamMetadata(t *testing.T) {
 	}
 }
 
+func TestStatusErrorCases(t *testing.T) {
+	t.Parallel()
+
+	cfg := testConfig(t)
+
+	// Missing manifest
+	if err := os.Remove(cfg.ManifestPath); err != nil && !os.IsNotExist(err) {
+		t.Fatalf("remove manifest: %v", err)
+	}
+	_, err := Status(cfg)
+	if err == nil {
+		t.Fatal("Status() expected error for missing manifest")
+	}
+
+	// Invalid manifest JSON
+	if err := os.WriteFile(cfg.ManifestPath, []byte("invalid json"), 0o644); err != nil {
+		t.Fatalf("write invalid manifest: %v", err)
+	}
+	_, err = Status(cfg)
+	if err == nil {
+		t.Fatal("Status() expected error for invalid manifest JSON")
+	}
+
+	// Output hash mismatch (tampered output)
+	// Already covered by TestStatusDirtyWhenOutputTampered, but let's add missing output case
+	cfg = testConfig(t) // reset
+	if _, err := Update(cfg); err != nil {
+		t.Fatalf("Update() failed: %v", err)
+	}
+	if err := os.Remove(cfg.OutputPath); err != nil {
+		t.Fatalf("remove output: %v", err)
+	}
+	_, err = Status(cfg)
+	if err == nil {
+		t.Fatal("Status() expected error for missing output file")
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		cfg     Config
+		wantErr error
+	}{
+		{
+			name: "missing snapshot dir",
+			cfg: Config{
+				UpstreamRepo: "repo",
+				SnapshotDir:  "",
+				OutputPath:   "out",
+				ManifestPath: "manifest",
+			},
+			wantErr: errSnapshotDirRequired,
+		},
+		{
+			name: "missing output path",
+			cfg: Config{
+				UpstreamRepo: "repo",
+				SnapshotDir:  "snap",
+				OutputPath:   "",
+				ManifestPath: "manifest",
+			},
+			wantErr: errOutputPathRequired,
+		},
+		{
+			name: "missing manifest path",
+			cfg: Config{
+				UpstreamRepo: "repo",
+				SnapshotDir:  "snap",
+				OutputPath:   "out",
+				ManifestPath: "",
+			},
+			wantErr: errManifestPathRequired,
+		},
+		{
+			name: "upstream version set but repo missing",
+			cfg: Config{
+				UpstreamRepo:    "",
+				UpstreamVersion: "v1",
+				SnapshotDir:     "snap",
+				OutputPath:      "out",
+				ManifestPath:    "manifest",
+			},
+			wantErr: errUpstreamRepoRequiredWithVer,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := Update(tc.cfg)
+			if !errors.Is(err, tc.wantErr) {
+				t.Errorf("Update() error = %v, want %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestReadSnapshotMissingDir(t *testing.T) {
+	t.Parallel()
+
+	_, _, err := readSnapshot("/non/existent/dir")
+	if err == nil {
+		t.Fatal("readSnapshot() expected error for missing directory")
+	}
+}
+
 func testConfig(t *testing.T) Config {
 	t.Helper()
 
@@ -195,6 +306,10 @@ func testConfig(t *testing.T) Config {
 	snapshotDir := filepath.Join(root, "snapshots")
 	if err := os.MkdirAll(snapshotDir, 0o755); err != nil {
 		t.Fatalf("mkdir snapshots: %v", err)
+	}
+	outDir := filepath.Join(root, "out")
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		t.Fatalf("mkdir out: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(snapshotDir, "bots.yml"), []byte("bot: Googlebot\n"), 0o644); err != nil {
 		t.Fatalf("write bots snapshot: %v", err)
