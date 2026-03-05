@@ -1,6 +1,8 @@
 package ddsync
 
 import (
+	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -73,7 +75,7 @@ func TestSyncSnapshotFromRepoURLCopiesRegexes(t *testing.T) {
 	snapshotDir := t.TempDir()
 	writeTestFile(t, filepath.Join(snapshotDir, "stale.txt"), "stale\n")
 
-	if err := syncSnapshotFromRepoURL(repoDir, "v1.0.0", snapshotDir); err != nil {
+	if err := syncSnapshotFromRepoURL(context.Background(), repoDir, "v1.0.0", snapshotDir, nil); err != nil {
 		t.Fatalf("syncSnapshotFromRepoURL() failed: %v", err)
 	}
 
@@ -95,13 +97,120 @@ func TestSyncSnapshotFromRepoURLMissingRegexes(t *testing.T) {
 	initTaggedRepo(t, repoDir, "v1.0.0")
 
 	snapshotDir := t.TempDir()
-	err := syncSnapshotFromRepoURL(repoDir, "v1.0.0", snapshotDir)
+	err := syncSnapshotFromRepoURL(context.Background(), repoDir, "v1.0.0", snapshotDir, nil)
 	if err == nil {
 		t.Fatal("expected error for missing regexes dir")
 	}
 	if !strings.Contains(err.Error(), "upstream regex directory not found") {
 		t.Fatalf("unexpected error: %v", err)
 	}
+}
+
+func TestSyncSnapshotFromRepoURLRefusesUnsafeDir(t *testing.T) {
+	t.Parallel()
+
+	err := syncSnapshotFromRepoURL(context.Background(), "repo", "v1.0.0", ".", nil)
+	if err == nil || !errors.Is(err, errInvalidSnapshotDir) {
+		t.Errorf("got error %v, want %v", err, errInvalidSnapshotDir)
+	}
+}
+
+func TestSyncSnapshotFromUpstream(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{
+		UpstreamRepo:    "matomo-org/device-detector",
+		UpstreamVersion: "v6.0.0",
+		SnapshotDir:     t.TempDir(),
+	}
+
+	t.Run("success", func(t *testing.T) {
+		cloner := func(ctx context.Context, repoURL, tag, dstDir string) error {
+			return os.WriteFile(filepath.Join(dstDir, "bots.yml"), []byte("bot: Googlebot\n"), 0o644)
+		}
+		err := syncSnapshotFromUpstream(context.Background(), cfg, cloner)
+		if err != nil {
+			t.Fatalf("syncSnapshotFromUpstream failed: %v", err)
+		}
+		assertFileContent(t, filepath.Join(cfg.SnapshotDir, "bots.yml"), "bot: Googlebot\n")
+	})
+
+	t.Run("invalid repo", func(t *testing.T) {
+		badCfg := cfg
+		badCfg.UpstreamRepo = "invalid"
+		err := syncSnapshotFromUpstream(context.Background(), badCfg, nil)
+		if err == nil {
+			t.Fatal("expected error for invalid repo")
+		}
+	})
+
+	t.Run("missing version", func(t *testing.T) {
+		badCfg := cfg
+		badCfg.UpstreamVersion = ""
+		err := syncSnapshotFromUpstream(context.Background(), badCfg, nil)
+		if !errors.Is(err, errUpstreamVersionMissing) {
+			t.Errorf("got error %v, want %v", err, errUpstreamVersionMissing)
+		}
+	})
+
+	t.Run("cloner error", func(t *testing.T) {
+		wantErr := errors.New("clone failed")
+		cloner := func(ctx context.Context, repoURL, tag, dstDir string) error {
+			return wantErr
+		}
+		err := syncSnapshotFromUpstream(context.Background(), cfg, cloner)
+		if !errors.Is(err, wantErr) {
+			t.Errorf("got error %v, want %v", err, wantErr)
+		}
+	})
+}
+
+func TestSyncSnapshotFromUpstreamWrapper(t *testing.T) {
+	if os.Getenv("NETWORK_TEST") != "1" {
+		t.Skip("skipping network-dependent test; set NETWORK_TEST=1 to run")
+	}
+
+	repo := "matomo-org/device-detector"
+	tag, err := ResolveLatestStableTag(repo)
+	if err != nil {
+		t.Fatalf("ResolveLatestStableTag failed: %v", err)
+	}
+
+	cfg := Config{
+		UpstreamRepo:    repo,
+		UpstreamVersion: tag,
+		SnapshotDir:     t.TempDir(),
+	}
+	err = SyncSnapshotFromUpstream(cfg)
+	if err != nil {
+		t.Fatalf("SyncSnapshotFromUpstream failed: %v", err)
+	}
+}
+
+func TestSyncSnapshotFromRepoURLUsesCloner(t *testing.T) {
+	t.Parallel()
+
+	snapshotDir := t.TempDir()
+	repoURL := "https://github.com/matomo-org/device-detector.git"
+	tag := "v6.0.0"
+
+	t.Run("cloner called", func(t *testing.T) {
+		called := false
+		cloner := func(ctx context.Context, url, tag, dst string) error {
+			called = true
+			if url != repoURL {
+				t.Errorf("got url %q, want %q", url, repoURL)
+			}
+			return nil
+		}
+		err := syncSnapshotFromRepoURL(context.Background(), repoURL, tag, snapshotDir, cloner)
+		if err != nil {
+			t.Fatalf("syncSnapshotFromRepoURL failed: %v", err)
+		}
+		if !called {
+			t.Fatal("cloner was not called")
+		}
+	})
 }
 
 func TestParseGitHubRepoSlug(t *testing.T) {
@@ -169,6 +278,94 @@ func TestCopyDirectoryContentsEmpty(t *testing.T) {
 	err := copyDirectoryContents(src, dst)
 	if err == nil || !strings.Contains(err.Error(), "upstream regex directory not found") {
 		t.Errorf("copyDirectoryContents() error = %v; want error containing 'not found'", err)
+	}
+}
+
+func TestCopyDirectoryContentsDiverseFiles(t *testing.T) {
+	t.Parallel()
+
+	src := t.TempDir()
+	dst := t.TempDir()
+
+	writeTestFile(t, filepath.Join(src, "regular.txt"), "data")
+	if err := os.MkdirAll(filepath.Join(src, "subdir", "nested-dir"), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	writeTestFile(t, filepath.Join(src, "subdir", "nested.txt"), "nested")
+	writeTestFile(t, filepath.Join(src, "subdir", "nested-dir", "deep.txt"), "deep")
+
+	// Create a symlink (non-regular file)
+	if err := os.Symlink("/etc/passwd", filepath.Join(src, "link")); err != nil {
+		t.Logf("skipping symlink test: %v", err)
+	}
+
+	err := copyDirectoryContents(src, dst)
+	if err != nil {
+		t.Fatalf("copyDirectoryContents failed: %v", err)
+	}
+
+	assertFileContent(t, filepath.Join(dst, "regular.txt"), "data")
+	assertFileContent(t, filepath.Join(dst, "subdir", "nested.txt"), "nested")
+
+	// Symlink should be skipped
+	if _, err := os.Lstat(filepath.Join(dst, "link")); !os.IsNotExist(err) {
+		t.Errorf("symlink was not skipped: %v", err)
+	}
+}
+
+func TestCopyDirectoryContentsMkdirError(t *testing.T) {
+	t.Parallel()
+
+	src := t.TempDir()
+	dst := t.TempDir()
+
+	if err := os.MkdirAll(filepath.Join(src, "subdir"), 0o755); err != nil {
+		t.Fatalf("mkdir src: %v", err)
+	}
+	writeTestFile(t, filepath.Join(src, "subdir", "file.txt"), "data")
+
+	// Create a file in dst where subdir should be
+	writeTestFile(t, filepath.Join(dst, "subdir"), "im-a-file")
+
+	err := copyDirectoryContents(src, dst)
+	if err == nil {
+		t.Fatal("copyDirectoryContents() expected error for mkdir failure")
+	}
+}
+
+func TestClearDirectoryError(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	subdir := filepath.Join(dir, "locked")
+	if err := os.MkdirAll(subdir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	// Create a file that is hard to remove? Actually os.RemoveAll is very persistent.
+	// But os.ReadDir(dir) will fail if we don't have permissions on dir itself.
+	if err := os.Chmod(dir, 0o000); err != nil {
+		t.Skip("chmod failed")
+	}
+	defer os.Chmod(dir, 0o755)
+
+	err := clearDirectory(dir)
+	if err == nil {
+		t.Fatal("clearDirectory() expected error")
+	}
+}
+
+func TestWriteSnapshotFileError(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "file")
+	writeTestFile(t, filePath, "data")
+
+	// Try to write to a path where parent is a file
+	err := writeSnapshotFile(filepath.Join(filePath, "nested"), []byte("data"))
+	if err == nil {
+		t.Fatal("writeSnapshotFile() expected error")
 	}
 }
 

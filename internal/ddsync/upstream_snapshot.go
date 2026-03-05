@@ -26,8 +26,14 @@ var (
 	errUnsafeRelativePath     = errors.New("unsafe relative path")
 )
 
+type snapshotCloner func(ctx context.Context, repoURL, tag, dstDir string) error
+
 // SyncSnapshotFromUpstream refreshes snapshot inputs from the resolved upstream version.
 func SyncSnapshotFromUpstream(cfg Config) error {
+	return syncSnapshotFromUpstream(context.Background(), cfg, cloneUpstreamSnapshot)
+}
+
+func syncSnapshotFromUpstream(ctx context.Context, cfg Config, cloner snapshotCloner) error {
 	_, err := sanitizeGitHubRepoSlug(cfg.UpstreamRepo)
 	if err != nil {
 		return err
@@ -39,10 +45,10 @@ func SyncSnapshotFromUpstream(cfg Config) error {
 		return errSnapshotDirMissing
 	}
 
-	return syncSnapshotFromRepoURL(upstreamRepoURL(cfg.UpstreamRepo), cfg.UpstreamVersion, cfg.SnapshotDir)
+	return syncSnapshotFromRepoURL(ctx, upstreamRepoURL(cfg.UpstreamRepo), cfg.UpstreamVersion, cfg.SnapshotDir, cloner)
 }
 
-func syncSnapshotFromRepoURL(repoURL, tag, snapshotDir string) error {
+func syncSnapshotFromRepoURL(ctx context.Context, repoURL, tag, snapshotDir string, cloner snapshotCloner) error {
 	tag = strings.TrimSpace(tag)
 	if tag == "" {
 		return errUpstreamVersionMissing
@@ -75,7 +81,7 @@ func syncSnapshotFromRepoURL(repoURL, tag, snapshotDir string) error {
 		return copyDirectoryContents(localRegexDir, cleanSnapshotDir)
 	}
 
-	return syncSnapshotFromUpstreamTag(repoURL, tag, cleanSnapshotDir)
+	return cloner(ctx, repoURL, tag, cleanSnapshotDir)
 }
 
 func localRegexDirectory(repoURL string) (string, bool) {
@@ -87,7 +93,7 @@ func localRegexDirectory(repoURL string) (string, bool) {
 	return filepath.Join(cleanRepoPath, "regexes"), true
 }
 
-func syncSnapshotFromUpstreamTag(repoURL, tag, dstDir string) error {
+func cloneUpstreamSnapshot(ctx context.Context, repoURL, tag, dstDir string) error {
 	slug, err := parseGitHubRepoSlug(repoURL)
 	if err != nil {
 		return err
@@ -107,11 +113,11 @@ func syncSnapshotFromUpstreamTag(repoURL, tag, dstDir string) error {
 		_ = os.RemoveAll(workDir)
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), upstreamCloneTimeout)
+	cloneCtx, cancel := context.WithTimeout(ctx, upstreamCloneTimeout)
 	defer cancel()
 
 	cloneDir := filepath.Join(workDir, "repo")
-	_, err = git.PlainCloneContext(ctx, cloneDir, false, &git.CloneOptions{
+	_, err = git.PlainCloneContext(cloneCtx, cloneDir, false, &git.CloneOptions{
 		URL:           upstreamRepoURL(supportedUpstreamRepoSlug),
 		Depth:         1,
 		ReferenceName: plumbing.NewTagReferenceName(safeTag),
@@ -120,8 +126,8 @@ func syncSnapshotFromUpstreamTag(repoURL, tag, dstDir string) error {
 		Tags:          git.AllTags,
 	})
 	if err != nil {
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return fmt.Errorf("clone upstream repo timed out: %w", ctx.Err())
+		if errors.Is(cloneCtx.Err(), context.DeadlineExceeded) {
+			return fmt.Errorf("clone upstream repo timed out: %w", cloneCtx.Err())
 		}
 		return fmt.Errorf("clone upstream repo: %w", err)
 	}

@@ -319,6 +319,26 @@ func TestUpdateWriteFileError(t *testing.T) {
 	}
 }
 
+func TestUpdateWriteManifestError(t *testing.T) {
+	t.Parallel()
+
+	cfg := testConfig(t)
+	// Success up to writing manifest, but manifest writing fails
+	if err := os.MkdirAll(filepath.Dir(cfg.ManifestPath), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(cfg.ManifestPath, []byte("not a dir"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	// Use a path that is inside the file we just created
+	cfg.ManifestPath = filepath.Join(cfg.ManifestPath, "inside-file")
+
+	_, err := Update(cfg)
+	if err == nil {
+		t.Fatal("Update() expected error for manifest writeFile failure")
+	}
+}
+
 func TestVerifyInvalidManifest(t *testing.T) {
 	t.Parallel()
 

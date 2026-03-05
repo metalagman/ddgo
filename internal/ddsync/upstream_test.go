@@ -1,6 +1,12 @@
 package ddsync
 
-import "testing"
+import (
+	"context"
+	"errors"
+	"os"
+	"testing"
+	"time"
+)
 
 func TestLatestStableTagFromRemote(t *testing.T) {
 	t.Parallel()
@@ -43,6 +49,12 @@ func TestParseStableSemver(t *testing.T) {
 		want stableSemver
 	}{
 		{tag: "v1.2.3", ok: true, want: stableSemver{major: 1, minor: 2, patch: 3}},
+		{tag: "6.5.0", ok: true, want: stableSemver{major: 6, minor: 5, patch: 0}},
+		{tag: "v1.2", ok: false, want: stableSemver{}},
+		{tag: "v1.2.3.4", ok: false, want: stableSemver{}},
+		{tag: "v1.x.3", ok: false, want: stableSemver{}},
+		{tag: "v-1.2.3", ok: false, want: stableSemver{}},
+		{tag: "", ok: false, want: stableSemver{}},
 		{tag: "1.2.3", ok: true, want: stableSemver{major: 1, minor: 2, patch: 3}},
 		{tag: "v1.2.3-rc1", ok: false},
 		{tag: "v1.2", ok: false},
@@ -62,6 +74,98 @@ func TestParseStableSemver(t *testing.T) {
 				t.Fatalf("parseStableSemver(%q) = %+v, want %+v", tc.tag, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestResolveLatestStableTag(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	repo := "matomo-org/device-detector"
+
+	t.Run("success", func(t *testing.T) {
+		lister := func(ctx context.Context, url string) ([]byte, error) {
+			return []byte("hash\trefs/tags/v6.0.0\nhash\trefs/tags/v6.1.0\n"), nil
+		}
+		tag, err := resolveLatestStableTag(ctx, repo, lister)
+		if err != nil {
+			t.Fatalf("resolveLatestStableTag failed: %v", err)
+		}
+		if tag != "v6.1.0" {
+			t.Errorf("got %q, want v6.1.0", tag)
+		}
+	})
+
+	t.Run("unsupported repo", func(t *testing.T) {
+		lister := func(ctx context.Context, url string) ([]byte, error) {
+			return nil, nil
+		}
+		_, err := resolveLatestStableTag(ctx, "other/repo", lister)
+		if !errors.Is(err, errUnsupportedRepo) {
+			t.Errorf("got error %v, want %v", err, errUnsupportedRepo)
+		}
+	})
+
+	t.Run("lister error", func(t *testing.T) {
+		wantErr := errors.New("network error")
+		lister := func(ctx context.Context, url string) ([]byte, error) {
+			return nil, wantErr
+		}
+		_, err := resolveLatestStableTag(ctx, repo, lister)
+		if !errors.Is(err, wantErr) {
+			t.Errorf("got error %v, want %v", err, wantErr)
+		}
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		lister := func(ctx context.Context, url string) ([]byte, error) {
+			// Simulate a context that was already cancelled to trigger the timeout error path
+			return nil, context.DeadlineExceeded
+		}
+		// Create a context that is already expired
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-1*time.Second))
+		defer cancel()
+
+		_, err := resolveLatestStableTag(ctx, repo, lister)
+		if !errors.Is(err, errResolveTagsTimedOut) {
+			t.Errorf("got error %v, want %v", err, errResolveTagsTimedOut)
+		}
+	})
+
+	t.Run("no stable tags", func(t *testing.T) {
+		lister := func(ctx context.Context, url string) ([]byte, error) {
+			return []byte("hash\trefs/tags/v1.0.0-rc1\n"), nil
+		}
+		_, err := resolveLatestStableTag(ctx, repo, lister)
+		if !errors.Is(err, errNoStableTags) {
+			t.Errorf("got error %v, want %v", err, errNoStableTags)
+		}
+	})
+}
+
+func TestResolveLatestStableTagWrapper(t *testing.T) {
+	// This test calls the real ResolveLatestStableTag which uses network/git.
+	// We only run it if a special flag or env var is set, or just try it and skip on error.
+	if os.Getenv("NETWORK_TEST") != "1" {
+		t.Skip("skipping network-dependent test; set NETWORK_TEST=1 to run")
+	}
+
+	tag, err := ResolveLatestStableTag("matomo-org/device-detector")
+	if err != nil {
+		t.Fatalf("ResolveLatestStableTag failed: %v", err)
+	}
+	if tag == "" {
+		t.Fatal("got empty tag")
+	}
+}
+
+func TestUpstreamRepoURL(t *testing.T) {
+	t.Parallel()
+
+	got := upstreamRepoURL("matomo-org/device-detector")
+	want := "https://github.com/matomo-org/device-detector.git"
+	if got != want {
+		t.Errorf("upstreamRepoURL() = %q, want %q", got, want)
 	}
 }
 
@@ -114,16 +218,6 @@ func TestSanitizeGitHubRepoSlug(t *testing.T) {
 		if err == nil && got != tc.want {
 			t.Errorf("sanitizeGitHubRepoSlug(%q) = %q, want %q", tc.input, got, tc.want)
 		}
-	}
-}
-
-func TestUpstreamRepoURL(t *testing.T) {
-	t.Parallel()
-
-	got := upstreamRepoURL("matomo-org/device-detector")
-	want := "https://github.com/matomo-org/device-detector.git"
-	if got != want {
-		t.Errorf("upstreamRepoURL() = %q, want %q", got, want)
 	}
 }
 

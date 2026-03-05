@@ -36,39 +36,46 @@ type stableSemver struct {
 	patch int
 }
 
+type tagLister func(ctx context.Context, repoURL string) ([]byte, error)
+
 // ResolveLatestStableTag returns the highest stable semver tag from upstream.
 func ResolveLatestStableTag(upstreamRepo string) (string, error) {
-	_, err := sanitizeGitHubRepoSlug(upstreamRepo)
+	return resolveLatestStableTag(context.Background(), upstreamRepo, listRemoteTags)
+}
+
+func resolveLatestStableTag(ctx context.Context, upstreamRepo string, lister tagLister) (string, error) {
+	repoSlug, err := sanitizeGitHubRepoSlug(upstreamRepo)
 	if err != nil {
 		return "", err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), upstreamResolveTimeout)
+	ctx, cancel := context.WithTimeout(ctx, upstreamResolveTimeout)
 	defer cancel()
 
-	tag, err := latestStableTagFromUpstream(ctx)
+	output, err := lister(ctx, upstreamRepoURL(repoSlug))
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return "", errResolveTagsTimedOut
 		}
 		return "", err
 	}
-	return tag, nil
+
+	return latestStableTagFromRemote(output)
 }
 
 func upstreamRepoURL(upstreamRepo string) string {
 	return "https://github.com/" + strings.TrimSuffix(strings.TrimSpace(upstreamRepo), ".git") + ".git"
 }
 
-func latestStableTagFromUpstream(ctx context.Context) (string, error) {
+func listRemoteTags(ctx context.Context, repoURL string) ([]byte, error) {
 	remote := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
 		Name: "origin",
-		URLs: []string{upstreamRepoURL(supportedUpstreamRepoSlug)},
+		URLs: []string{repoURL},
 	})
 
 	refs, err := remote.ListContext(ctx, &git.ListOptions{})
 	if err != nil {
-		return "", fmt.Errorf("list upstream refs: %w", err)
+		return nil, fmt.Errorf("list upstream refs: %w", err)
 	}
 
 	var refsOutput strings.Builder
@@ -82,7 +89,7 @@ func latestStableTagFromUpstream(ctx context.Context) (string, error) {
 		refsOutput.WriteByte('\n')
 	}
 
-	return latestStableTagFromRemote([]byte(refsOutput.String()))
+	return []byte(refsOutput.String()), nil
 }
 
 func sanitizeGitHubRepoSlug(upstreamRepo string) (string, error) {
