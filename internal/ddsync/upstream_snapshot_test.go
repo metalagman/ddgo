@@ -160,6 +160,18 @@ func TestSafeJoin(t *testing.T) {
 	}
 }
 
+func TestCopyDirectoryContentsEmpty(t *testing.T) {
+	t.Parallel()
+
+	src := t.TempDir()
+	dst := t.TempDir()
+
+	err := copyDirectoryContents(src, dst)
+	if err == nil || !strings.Contains(err.Error(), "upstream regex directory not found") {
+		t.Errorf("copyDirectoryContents() error = %v; want error containing 'not found'", err)
+	}
+}
+
 func initTaggedRepo(t *testing.T, dir, tag string) {
 	t.Helper()
 

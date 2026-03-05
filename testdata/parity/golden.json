@@ -15,8 +15,8 @@
       "Type": "Browser",
       "Name": "Chrome Mobile",
       "Version": "122.0.0.0",
-      "Engine": "WebKit",
-      "EngineVersion": "537.36"
+      "Engine": "Blink",
+      "EngineVersion": "122.0.0.0"
     },
     "OS": {
       "Name": "Android",

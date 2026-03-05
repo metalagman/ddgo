@@ -108,11 +108,13 @@ func buildClientFromMatch(
 
 	engine := rule.engineDefault
 	if len(rule.engineVersions) > 0 && version != Unknown {
-		// Keys in engineVersions are not necessarily sorted in the YAML.
-		// We'll iterate and pick the engine for the highest version that is <= current version.
+		bestV := ""
 		for v, e := range rule.engineVersions {
 			if compareVersions(version, v) >= 0 {
-				engine = e
+				if bestV == "" || compareVersions(v, bestV) > 0 {
+					bestV = v
+					engine = e
+				}
 			}
 		}
 	}

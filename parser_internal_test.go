@@ -3,6 +3,8 @@ package ddgo
 import (
 	"strings"
 	"testing"
+
+	"github.com/dlclark/regexp2"
 )
 
 func TestMapWindowsVersion(t *testing.T) {
@@ -175,6 +177,10 @@ func TestLegacyParsers(t *testing.T) {
 	if !ok || client.Name != "Microsoft Edge" || client.Engine != "Blink" {
 		t.Errorf("parseLegacyBrowserClient(Edge) = %+v, %v; want Name:Microsoft Edge, Engine:Blink", client, ok)
 	}
+	client, ok = parseLegacyBrowserClient("Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/124.0.0.0 Safari/604.1")
+	if !ok || client.Name != "Microsoft Edge" || client.Engine != "WebKit" {
+		t.Errorf("parseLegacyBrowserClient(EdgiOS) = %+v, %v; want Name:Microsoft Edge, Engine:WebKit", client, ok)
+	}
 	client, ok = parseLegacyBrowserClient("Mozilla/5.0 (Windows NT 10.0; Win64; x64) OPR/110.0.0.0")
 	if !ok || client.Name != "Opera" || client.Engine != "Blink" {
 		t.Errorf("parseLegacyBrowserClient(Opera) = %+v, %v; want Name:Opera, Engine:Blink", client, ok)
@@ -183,6 +189,10 @@ func TestLegacyParsers(t *testing.T) {
 	if !ok || client.Name != "Firefox" || client.Engine != "Gecko" {
 		t.Errorf("parseLegacyBrowserClient(Firefox) = %+v, %v; want Name:Firefox, Engine:Gecko", client, ok)
 	}
+	client, ok = parseLegacyBrowserClient("Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) FxiOS/94.0")
+	if !ok || client.Name != "Firefox" || client.Engine != "WebKit" {
+		t.Errorf("parseLegacyBrowserClient(FxiOS) = %+v, %v; want Name:Firefox, Engine:WebKit", client, ok)
+	}
 	client, ok = parseLegacyBrowserClient("Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Mobile/15E148 Safari/604.1")
 	if !ok || client.Name != "Safari" || client.Engine != "WebKit" {
 		t.Errorf("parseLegacyBrowserClient(Safari) = %+v, %v; want Name:Safari, Engine:WebKit", client, ok)
@@ -190,6 +200,10 @@ func TestLegacyParsers(t *testing.T) {
 	client, ok = parseLegacyBrowserClient("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
 	if !ok || client.Name != "Chrome" || client.Engine != "Blink" {
 		t.Errorf("parseLegacyBrowserClient(Chrome) = %+v, %v; want Name:Chrome, Engine:Blink", client, ok)
+	}
+	client, ok = parseLegacyBrowserClient("Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) CriOS/124.0.0.0")
+	if !ok || client.Name != "Chrome" || client.Engine != "WebKit" {
+		t.Errorf("parseLegacyBrowserClient(CriOS) = %+v, %v; want Name:Chrome, Engine:WebKit", client, ok)
 	}
 
 	// Test parseOSLegacy
@@ -390,3 +404,297 @@ func TestCompareVersions(t *testing.T) {
 		}
 	}
 }
+
+func TestNormalizeDeviceType(t *testing.T) {
+	cases := []struct {
+		input    string
+		expected string
+	}{
+		{"smartphone", "Smartphone"},
+		{"FEATURE_PHONE", "Feature Phone"},
+		{"phablet", "Phablet"},
+		{"tablet", "Tablet"},
+		{"desktop", "Desktop"},
+		{"console", "Console"},
+		{"tv", "TV"},
+		{"camera", "Camera"},
+		{"car browser", "Car Browser"},
+		{"portable media player", "Portable Media Player"},
+		{"smart display", "Smart Display"},
+		{"smart speaker", "Smart Speaker"},
+		{"peripheral", "Peripheral"},
+		{"wearable", "Wearable"},
+		{"unknown", "Unknown"},
+		{"", "Unknown"},
+		{"custom type", "Custom Type"},
+	}
+
+	for _, tc := range cases {
+		got := normalizeDeviceType(tc.input)
+		if got != tc.expected {
+			t.Errorf("normalizeDeviceType(%q) = %q; want %q", tc.input, got, tc.expected)
+		}
+	}
+}
+
+func TestInferDeviceType(t *testing.T) {
+	btrue := true
+	bfalse := false
+
+	cases := []struct {
+		mobile   *bool
+		osName   string
+		expected string
+	}{
+		{&btrue, "Android", "Smartphone"},
+		{&bfalse, "Android", "Tablet"},
+		{&bfalse, "iOS", "Tablet"},
+		{&btrue, "Windows", "Smartphone"},
+		{&bfalse, "Windows", "Desktop"},
+		{&bfalse, "macOS", "Desktop"},
+		{&bfalse, "Linux", "Desktop"},
+		{&bfalse, "Chrome OS", "Desktop"},
+		{&bfalse, "Other", "Unknown"},
+		{nil, "Android", "Smartphone"},
+		{nil, "iOS", "Smartphone"},
+		{nil, "Windows", "Desktop"},
+		{nil, "macOS", "Desktop"},
+		{nil, "Linux", "Desktop"},
+		{nil, "Chrome OS", "Desktop"},
+		{nil, "Other", "Unknown"},
+	}
+
+	for _, tc := range cases {
+		got := inferDeviceType(tc.mobile, tc.osName)
+		if got != tc.expected {
+			t.Errorf("inferDeviceType(%v, %q) = %q; want %q", tc.mobile, tc.osName, got, tc.expected)
+		}
+	}
+}
+
+func TestProfileForBrand(t *testing.T) {
+	cases := []struct {
+		brand string
+		ok    bool
+		name  string
+	}{
+		{"Edge", true, "Microsoft Edge"},
+		{"Opera", true, "Opera"},
+		{"Chrome", true, "Chrome"},
+		{"Chromium", true, "Chrome"},
+		{"Firefox", true, "Firefox"},
+		{"Safari", true, "Safari"},
+		{"Unknown", false, ""},
+	}
+
+	for _, tc := range cases {
+		got, ok := profileForBrand(tc.brand)
+		if ok != tc.ok {
+			t.Errorf("profileForBrand(%q) ok = %v; want %v", tc.brand, ok, tc.ok)
+		}
+		if ok && got.Name != tc.name {
+			t.Errorf("profileForBrand(%q) name = %q; want %q", tc.brand, got.Name, tc.name)
+		}
+	}
+}
+
+func TestPlatformFromUserAgent(t *testing.T) {
+	cases := []struct {
+		ua       string
+		expected string
+	}{
+		{"Mozilla/5.0 (Linux; arm64; Android 14; SM-G991B)", "ARM"},
+		{"Mozilla/5.0 (Linux; aarch64; Android 14)", "ARM"},
+		{"Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "x64"},
+		{"Mozilla/5.0 (Windows NT 6.1; WOW64)", "x64"},
+		{"Mozilla/5.0 (Windows NT 6.1; x86)", "x86"},
+		{"Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0; i686)", "x86"},
+		{"Unknown", ""},
+	}
+
+	for _, tc := range cases {
+		got := platformFromUserAgent(strings.ToLower(tc.ua))
+		if got != tc.expected {
+			t.Errorf("platformFromUserAgent(%q) = %q; want %q", tc.ua, got, tc.expected)
+		}
+	}
+}
+
+func TestNewWithNilOption(t *testing.T) {
+	d, err := New(nil)
+	if err != nil {
+		t.Fatalf("New(nil) error = %v", err)
+	}
+	if d == nil {
+		t.Fatal("New(nil) returned nil detector")
+	}
+}
+
+func TestDetectClientEngineLegacy(t *testing.T) {
+	// Test the fallback switch in detectClientEngine
+	cases := []struct {
+		ua       string
+		expected string
+	}{
+		{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36", "Blink"},
+		{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edg/124.0.0.0 Safari/537.36", "Blink"},
+		{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) EdgA/124.0.0.0", "Blink"},
+		{"Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Mobile/15E148 Safari/604.1", "WebKit"},
+		{"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0", "Gecko"},
+		{"Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7.5) Gecko/20041107 Firefox/1.0", "Gecko"},
+		{"Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)", "Trident"},
+		{"Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Trident/4.0)", "Trident"},
+		{"Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.10", "Presto"},
+		{"Unknown", Unknown},
+	}
+
+	for _, tc := range cases {
+		// Pass empty rules to trigger fallback switch
+		got, err := detectClientEngine(tc.ua, []rune(tc.ua), nil)
+		if err != nil {
+			t.Errorf("detectClientEngine(%q) error = %v", tc.ua, err)
+			continue
+		}
+		if got != tc.expected {
+			t.Errorf("detectClientEngine(%q) = %q; want %q", tc.ua, got, tc.expected)
+		}
+	}
+}
+
+func TestExpandRuleTemplate(t *testing.T) {
+	re := regexp2.MustCompile("(a)(b)", 0)
+	match, _ := re.FindStringMatch("ab")
+
+	cases := []struct {
+		template string
+		match    *regexp2.Match
+		expected string
+	}{
+		{"$1$2", match, "ab"},
+		{"$1 $2", match, "a b"},
+		{"$1-$3", match, "a-"},
+		{"$1-$x", match, "a-$x"},
+		{"", match, ""},
+		{"static", nil, "static"},
+		{"$1", nil, "$1"},
+	}
+
+	for _, tc := range cases {
+		got := expandRuleTemplate(tc.template, tc.match)
+		if got != tc.expected {
+			t.Errorf("expandRuleTemplate(%q) = %q; want %q", tc.template, got, tc.expected)
+		}
+	}
+}
+
+func TestNormalizeRuleVersion(t *testing.T) {
+	cases := []struct {
+		input    string
+		expected string
+	}{
+		{"1_2_3", "1.2.3"},
+		{" 1.2.3 ", "1.2.3"},
+		{"", Unknown},
+		{" ", Unknown},
+		{".", Unknown},
+	}
+
+	for _, tc := range cases {
+		got := normalizeRuleVersion(tc.input)
+		if got != tc.expected {
+			t.Errorf("normalizeRuleVersion(%q) = %q; want %q", tc.input, got, tc.expected)
+		}
+	}
+}
+
+func TestNormalizeRuleField(t *testing.T) {
+	cases := []struct {
+		input    string
+		expected string
+	}{
+		{" value ", "value"},
+		{"", Unknown},
+		{" ", Unknown},
+	}
+
+	for _, tc := range cases {
+		got := normalizeRuleField(tc.input)
+		if got != tc.expected {
+			t.Errorf("normalizeRuleField(%q) = %q; want %q", tc.input, got, tc.expected)
+		}
+	}
+}
+
+func TestLoadRulesInvalidYAMLAll(t *testing.T) {
+	invalidYAML := "[ invalid yaml"
+	mockMap := map[string]string{
+		"bots.yml":                   invalidYAML,
+		"client/browsers.yml":        invalidYAML,
+		"client/browser_engine.yml":  invalidYAML,
+		"oss.yml":                    invalidYAML,
+		"vendorfragments.yml":        invalidYAML,
+		"client/feed_readers.yml":    invalidYAML,
+		"client/mobile_apps.yml":     invalidYAML,
+		"client/mediaplayers.yml":    invalidYAML,
+		"client/pim.yml":             invalidYAML,
+		"client/libraries.yml":       invalidYAML,
+		"device/cameras.yml":         invalidYAML,
+		"device/car_browsers.yml":    invalidYAML,
+		"device/consoles.yml":        invalidYAML,
+		"device/mobiles.yml":         invalidYAML,
+		"device/notebooks.yml":       invalidYAML,
+		"device/portable_media_player.yml": invalidYAML,
+		"device/shell_tv.yml":        invalidYAML,
+		"device/televisions.yml":     invalidYAML,
+	}
+
+	if _, err := loadBotRules(mockMap); err == nil {
+		t.Error("loadBotRules() expected error")
+	}
+	if _, err := loadClientRules(mockMap); err == nil {
+		t.Error("loadClientRules() expected error")
+	}
+	if _, err := loadClientEngineRules(mockMap); err == nil {
+		t.Error("loadClientEngineRules() expected error")
+	}
+	if _, err := loadOSRules(mockMap); err == nil {
+		t.Error("loadOSRules() expected error")
+	}
+	if _, err := loadDeviceRules(mockMap); err == nil {
+		t.Error("loadDeviceRules() expected error")
+	}
+}
+
+func TestParseBotMatch(t *testing.T) {
+	detector, _ := New()
+	// Googlebot
+	ua := "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+	res, err := detector.Parse(ua)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if !res.Bot.IsBot || res.Bot.Name != "Googlebot" {
+		t.Errorf("Parse(Googlebot) = %+v; want Googlebot", res.Bot)
+	}
+}
+
+func TestCacheEdgeCases(t *testing.T) {
+	// Test NewLRUResultCache with invalid size
+	c := NewLRUResultCache(0)
+	if c != nil {
+		t.Fatal("NewLRUResultCache(0) should return nil")
+	}
+
+	c = NewLRUResultCache(1)
+	if c == nil {
+		t.Fatal("NewLRUResultCache(1) should return cache")
+	}
+	c.Set("a", Result{})
+	c.Set("b", Result{}) // Should evict "a"
+	_, ok := c.Get("a")
+	if ok {
+		t.Error("expected 'a' to be evicted")
+	}
+}
+
+

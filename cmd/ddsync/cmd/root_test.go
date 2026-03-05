@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -283,11 +284,33 @@ func TestNewRootCommand(t *testing.T) {
 }
 
 func TestExecute(t *testing.T) {
-	// Execute uses os.Stdout/Stderr which we can't easily capture here without redirecting,
-	// but we can at least call it with a command that exists.
-	// We'll call it with "version" to be safe.
-	// Since Execute() doesn't take args, we can't easily pass "version" to it
-	// because it uses the real os.Args.
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+
+	os.Args = []string{"ddsync", "version"}
+	err := Execute("test-version")
+	if err != nil {
+		t.Errorf("Execute() error = %v", err)
+	}
+}
+
+func TestConfigMissingSnapshotDir(t *testing.T) {
+	opts := &rootOptions{
+		snapshotDir: "",
+	}
+	_, err := opts.config()
+	if err == nil {
+		t.Error("opts.config() expected error for missing snapshot dir")
+	}
+}
+
+func TestNormalizeIssues(t *testing.T) {
+	in := []string{"  issue1  ", "", "issue1", "issue2"}
+	want := []string{"issue1", "issue2"}
+	got := normalizeIssues(in)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("normalizeIssues() = %v; want %v", got, want)
+	}
 }
 
 func execCommand(t *testing.T, args ...string) (string, string, error) {

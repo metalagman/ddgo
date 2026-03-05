@@ -299,6 +299,84 @@ func TestReadSnapshotMissingDir(t *testing.T) {
 	}
 }
 
+func TestUpdateWriteFileError(t *testing.T) {
+	t.Parallel()
+
+	cfg := testConfig(t)
+	// Create a file where a directory should be to cause writeFile to fail
+	if err := os.MkdirAll(filepath.Dir(cfg.OutputPath), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(cfg.OutputPath, []byte("not a dir"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	// Use a path that is inside the file we just created
+	cfg.OutputPath = filepath.Join(cfg.OutputPath, "inside-file")
+
+	_, err := Update(cfg)
+	if err == nil {
+		t.Fatal("Update() expected error for writeFile failure")
+	}
+}
+
+func TestVerifyInvalidManifest(t *testing.T) {
+	t.Parallel()
+
+	cfg := testConfig(t)
+	if err := os.WriteFile(cfg.ManifestPath, []byte("invalid json"), 0o644); err != nil {
+		t.Fatalf("write invalid manifest: %v", err)
+	}
+
+	err := Verify(cfg)
+	if err == nil {
+		t.Fatal("Verify() expected error for invalid manifest JSON")
+	}
+}
+
+func TestMarshalStableJSONError(t *testing.T) {
+	// Channels cannot be marshaled to JSON
+	_, err := marshalStableJSON(make(chan int))
+	if err != nil {
+		// Expected error
+		return
+	}
+	t.Fatal("marshalStableJSON() expected error for channel")
+}
+
+func TestWriteFileMkdirError(t *testing.T) {
+	// Use a path where a file exists where a directory should be
+	root := t.TempDir()
+	filePath := filepath.Join(root, "file")
+	if err := os.WriteFile(filePath, []byte("data"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	// Try to write to a path inside the file
+	err := writeFile(filepath.Join(filePath, "subdir", "target"), []byte("data"))
+	if err == nil {
+		t.Fatal("writeFile() expected error for mkdir failure")
+	}
+}
+
+func TestReadSnapshotWalkError(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	subdir := filepath.Join(root, "subdir")
+	if err := os.MkdirAll(subdir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	// On Linux, we can make it unreadable
+	if err := os.Chmod(subdir, 0o000); err != nil {
+		t.Skip("chmod 000 failed, skipping walk error test")
+	}
+	defer os.Chmod(subdir, 0o755) // cleanup
+
+	_, _, err := readSnapshot(root)
+	if err == nil {
+		t.Fatal("readSnapshot() expected walk error")
+	}
+}
+
 func testConfig(t *testing.T) Config {
 	t.Helper()
 
